@@ -67,10 +67,10 @@ export const MONTAGNA = {
   stunPalo: 1500,        // ms stordito dopo un palo
   stunSciatore: 900,
   cadutaMs: 12000,       // durata caduta libera (fase 2)
-  catchRate: 70,         // quanto ci si avvicina al guanto stando in linea (px/s)
-  driftAway: 45,         // quanto si allontana se non sei in linea (px/s)
-  bombardinoGain: 80,    // ogni bombardino preso avvicina al guanto (px)
-  bombardinoEvery: 1100, // ogni quanto compare un bombardino (ms)
+  catchRate: 6,         // quanto ci si avvicina al guanto stando in linea (px/s)
+  driftAway: 6,         // quanto si allontana se non sei in linea (px/s)
+  bombardinoGain: 42,    // ogni bombardino preso avvicina al guanto (px)
+  bombardinoEvery: 1300, // ogni quanto compare un bombardino (ms)
   crashLine: 'OTRA VEZ LOS PALOS!',
   guanteLine: '¡MI GUANTE!',
   tengoLine: '¡LO TENGO!',

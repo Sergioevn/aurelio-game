@@ -398,7 +398,7 @@ export class MiniMontagna extends Phaser.Scene {
       this.bombMs = M.bombardinoEvery + Phaser.Math.Between(-200, 200);
       const bx = Phaser.Math.Clamp(this.glove.x + Phaser.Math.Between(-70, 70), 30, W - 40);
       const o = this.add.image(bx, H + 20, 'bombardino').setScale(2).setDepth(7);
-      o.kind = 'bombardino'; this.obst.push(o);
+      o.kind = 'bombardino'; this.obst.push(o); this.spawnedB = (this.spawnedB || 0) + 1;
       this.tweens.add({ targets: o, scale: 2.4, duration: 300, yoyo: true, repeat: -1 });
     }
     const pb = new Phaser.Geom.Rectangle(p.x - 12, p.y - 20, 24, 40);
@@ -413,7 +413,7 @@ export class MiniMontagna extends Phaser.Scene {
         continue;
       }
       if (!o.hit && this.stunMs <= 0 && Phaser.Geom.Intersects.RectangleToRectangle(pb, o.getBounds())) {
-        o.hit = true; this.stunMs = 700; this.gap = Math.min(300, this.gap + 70);
+        o.hit = true; this.stunMs = 700; this.gap = Math.min(300, this.gap + 35);
         sfx.hit(); this.cameras.main.shake(150, 0.01);
         this.floatText(p.x, p.y + 50, o.kind === 'ramo' ? '¡AY! UN RAMO' : '¡AY! IL PILONE', '#ff6b5b');
       }
