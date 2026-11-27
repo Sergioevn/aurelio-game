@@ -1,6 +1,6 @@
-import { W, H, txt, PLAYER_Y } from '../util.js';
+import { W, H, txt, PLAYER_Y, FOG_R } from '../util.js';
 import { sfx } from '../sfx.js';
-import { FRIENDS, BOOSTERS, OBSTACLES, CRUTCHES, DONKEY, LEVEL, SPAWN_WEIGHTS, BOSS, MONTAGNA } from '../data/characters.js';
+import { FRIENDS, BOOSTERS, OBSTACLES, CRUTCHES, DONKEY, LEVEL, SPAWN_WEIGHTS, BOSS, MONTAGNA, NEBBIA } from '../data/characters.js';
 
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
@@ -22,6 +22,8 @@ export class Level extends Phaser.Scene {
     this.racket = this.add.image(0, 0, 'racchetta').setScale(1.6).setDepth(6).setVisible(false);
     this.crutches = this.add.image(0, 0, 'stampelle').setScale(2).setDepth(4).setVisible(false);
     this.donkey = this.add.image(0, 0, 'asino').setScale(3).setDepth(6).setVisible(false);
+    this.fanImg = this.add.image(0, 0, 'ventilatore').setScale(2).setDepth(7).setVisible(false);
+    this.fogImg = this.add.image(W / 2, PLAYER_Y, 'nebbia').setDepth(15).setAlpha(0); this.fogAlpha = 0;
 
     // Controlli: trascina il dito (o tieni premuto) per spostarti; frecce su PC
     this.targetX = null;
@@ -49,7 +51,7 @@ export class Level extends Phaser.Scene {
     this.scoreText = txt(this, 8, 12, '0', 8, '#f4d03f', 0).setOrigin(0, 0.5).setDepth(21);
     this.hearts = [];
     for (let i = 0; i < 5; i++) this.hearts.push(this.add.image(W - 12 - i * 13, 12, 'cuore').setScale(1.3).setDepth(21));
-    this.effectText = txt(this, W / 2, 62, '', 7, '#bfe3f0').setDepth(21);
+    this.effectText = txt(this, W / 2, 62, '', 7, '#bfe3f0').setDepth(21).setWordWrapWidth(W - 20).setOrigin(0.5, 0);
 
     // Leggenda amici: facce scure finché non li batti, poi si colorano
     const fk = Object.keys(FRIENDS);
@@ -83,6 +85,7 @@ export class Level extends Phaser.Scene {
     this.movePlayer(dt);
     this.tickEffects(dt);
     this.updateShots(dt);
+    this.updateFanFog(dt);
 
     // Comparsa oggetti
     this.spawnMs -= dt;
@@ -166,7 +169,7 @@ export class Level extends Phaser.Scene {
   }
 
   tickEffects(dt) {
-    const labels = { riding: 'ASINO', wide: 'GAMBE LARGHE', speed: 'TURBO', double: 'x2', invincible: 'INVINCIBILE', padel: 'PADEL', stuck: 'SUL DIVANO', crutches: 'STAMPELLE', ski: 'SCI-BLASTER' };
+    const labels = { riding: 'ASINO', wide: 'GAMBE LARGHE', speed: 'TURBO', double: 'x2', invincible: 'INVINCIBILE', padel: 'PADEL', stuck: 'SUL DIVANO', crutches: 'STAMPELLE', ski: 'SCI-BLASTER', fan: 'VENTILATORE', fog: 'NEBBIA' };
     const active = [];
     for (const k of Object.keys(this.effects)) {
       this.effects[k] -= dt;
@@ -318,18 +321,56 @@ export class Level extends Phaser.Scene {
     this.hurtMs = 1200;
     this.physics.resume(); this.frozen = false;
     if (!res) return;
-    if (res.win) {
-      const R = MONTAGNA.reward;
-      this.addBonus(R.points + (res.bonus || 0));
-      this.lives = Math.min(this.lives + R.life, this.hearts.length); this.refreshHearts();
-      this.effects.ski = R.skiMs;
-      sfx.boost();
-      this.floatText(this.player.x, this.player.y - 50, 'SCI-BLASTER!', '#bfe3f0');
-      this.markBeaten(res.mini);
-    } else {
-      this.effects.crutches = CRUTCHES.ms;
-      this.floatText(this.player.x, this.player.y - 50, CRUTCHES.label, '#ff9ecb');
+    const p = this.player;
+    if (res.mini === 'javier') {
+      if (res.win) {
+        const R = MONTAGNA.reward;
+        this.addBonus(R.points + (res.bonus || 0));
+        this.lives = Math.min(this.lives + R.life, this.hearts.length); this.refreshHearts();
+        this.effects.ski = R.skiMs;
+        this.floatText(p.x, p.y - 50, 'SCI-BLASTER!', '#bfe3f0');
+      } else {
+        this.effects.crutches = CRUTCHES.ms;
+        this.floatText(p.x, p.y - 50, CRUTCHES.label, '#ff9ecb');
+      }
+    } else if (res.mini === 'lollo') {
+      if (res.win) {
+        this.addBonus(NEBBIA.reward.points);
+        this.effects.fan = NEBBIA.reward.fanMs;
+        this.floatText(p.x, p.y - 50, 'VENTILATORE!', '#bfe3f0');
+      } else {
+        this.effects.fog = NEBBIA.fogMs;
+        this.floatText(p.x, p.y - 50, 'CHE NEBBIA...', '#c8b49a');
+      }
     }
+    if (res.win) { sfx.boost(); this.markBeaten(res.mini); }
+  }
+
+  // Ventilatore (premio di Lollo): soffia via di lato pizze, rocce, asini e inviti vicini
+  // Nebbia (malus di Lollo): si vede solo un cerchio attorno ad Aurelio
+  updateFanFog(dt) {
+    const p = this.player, s = dt / 1000;
+    const fan = !!this.effects.fan;
+    this.fanImg.setVisible(fan);
+    if (fan) {
+      this.fanImg.setPosition(p.x, p.y - 44).setAngle(Math.sin(this.elapsed / 40) * 6);
+      for (const it of this.items.getChildren()) {
+        if (!(OBSTACLES[it.kind] || it.kind === 'invito') || it.reflected) continue;
+        const dx = it.x - p.x, dy = it.y - p.y;
+        if (dy > -240 && dy < 30 && Math.abs(dx) < 90) {
+          it.x += (dx === 0 ? 1 : Math.sign(dx)) * 360 * s;
+          if (it.x < -20 || it.x > W + 20) it.destroy();
+        }
+      }
+      if (Math.random() < s * 14) {
+        const l = this.add.rectangle(p.x + Phaser.Math.Between(-30, 30), p.y - 60, 2, 12, 0xffffff, 0.7).setDepth(6);
+        this.tweens.add({ targets: l, y: l.y - 90, alpha: 0, duration: 400, onComplete: () => l.destroy() });
+      }
+    }
+    const fogOn = !!this.effects.fog;
+    const target = fogOn ? (this.effects.fog < 600 ? this.effects.fog / 600 * 0.96 : 0.96) : 0;
+    this.fogAlpha += (target - this.fogAlpha) * Math.min(1, s * 5);
+    this.fogImg.setAlpha(this.fogAlpha).setPosition(p.x, p.y).setScale(72 / FOG_R);
   }
 
   // Amico battuto: la sua faccia si colora e non torna più. Battuti tutti = finale.

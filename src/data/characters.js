@@ -7,7 +7,8 @@ export const FRIENDS = {
   francesco: { name: 'FRANCESCO', game: 'LA SERATA',    line: 'Un\'altra birra?' },
   sergio:    { name: 'SERGIO',    game: 'CALISTHENICS', line: 'Solo 3 serie, giuro' },
   antonio:   { name: 'ANTONIO',   game: 'IL PORTAFOGLIO', line: 'Guarda che affare!' },
-  lollo:     { name: 'LOLLO',     game: 'LA NEBBIA',    line: 'Un tiro e andiamo' }
+  lollo:     { name: 'LOLLO',     game: 'LA NEBBIA',    line: 'UN TIRO E ANDIAMO', scene: 'MiniNebbia',
+               winLine: 'SAI CHE HO SMESSO\nDI FUMARE?', loseLine: 'LA SIGA SOCIALE\nNON CONTA' }
 };
 
 // Booster: kind -> effetto applicato in Level.applyEffect
@@ -75,4 +76,17 @@ export const MONTAGNA = {
   guanteLine: '¡MI GUANTE!',
   tengoLine: '¡LO TENGO!',
   reward: { points: 300, life: 1, skiMs: 7000 }  // se vince: punti, vita in più, sci-blaster
+};
+
+// Mini-gioco Nebbia (Lollo): un ladro ruba il telefono ad Aurelio nel fumo
+export const NEBBIA = {
+  durataMs: 30000,       // tempo per ritrovare il ladro
+  luce: 62,              // raggio di visibilità attorno ad Aurelio (px)
+  luceSiga: 36,          // raggio quando ti prende un anello di fumo
+  sigaMs: 3000,
+  ventoEvery: 7000,      // ogni quanto una folata dirada il fumo
+  ladroSpeed: 190,       // velocità del ladro quando passa vicino ad Aurelio
+  stealLine: '¡MI MÓVIL!',
+  reward: { points: 300, fanMs: 8000 },   // se vince: ventilatore che soffia via pizze, rocce, asini e inviti
+  fogMs: 8000                              // se perde: nebbia nel livello
 };

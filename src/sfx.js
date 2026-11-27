@@ -34,5 +34,6 @@ export const sfx = {
   wind()   { this.tone([180, 220, 200, 160], 0.12, 'triangle', 0.04); },
   fall()   { this.tone([880, 740, 587, 440, 330, 220], 0.09, 'triangle', 0.08); },
   win()    { this.tone([523, 659, 784, 1047, 784, 1047], 0.1, 'triangle', 0.09); },
+  ring()   { this.tone([1320, 1100, 1320, 1100, 1320, 1100], 0.05, 'square', 0.04); },
   over()   { this.tone([392, 330, 262, 196], 0.18, 'triangle', 0.08); }
 };

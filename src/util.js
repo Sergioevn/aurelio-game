@@ -5,6 +5,8 @@ export const H = 480;
 export const FONT = 'PressStart';
 // Altezza del personaggio: alzato per lasciare in basso una fascia libera dove appoggiare il dito
 export const PLAYER_Y = H - 140;
+// Raggio del buco nella texture 'nebbia'
+export const FOG_R = 62;
 
 export function txt(scene, x, y, str, size = 8, color = '#ffffff', origin = 0.5) {
   return scene.add.text(x, y, str, {
@@ -86,6 +88,23 @@ export function makeTextures(scene) {
     n.fillRect(x1, y, 1, 1); n.fillRect(x1 + 4, y, 1, 1); n.fillRect(x2, y, 1, 1); n.fillRect(x2 + 4, y, 1, 1);
   }
   snow.refresh();
+
+  // Nebbia: una grande lastra di fumo con un buco sfumato al centro (raggio FOG_R).
+  // Si mette centrata su Aurelio; scalandola si allarga o stringe il buco.
+  const FW = W * 3, FH = H * 3;
+  const fog = scene.textures.createCanvas('nebbia', FW, FH);
+  const fc = fog.getContext();
+  fc.fillStyle = '#8a8c94'; fc.fillRect(0, 0, FW, FH);
+  for (let i = 0; i < 2500; i++) { // un po' di grana nel fumo
+    fc.fillStyle = Math.random() < 0.5 ? '#80828a' : '#94969e';
+    fc.fillRect(Math.floor(Math.random() * FW), Math.floor(Math.random() * FH), 3, 3);
+  }
+  fc.globalCompositeOperation = 'destination-out';
+  const grad = fc.createRadialGradient(FW / 2, FH / 2, 0, FW / 2, FH / 2, FOG_R * 1.3);
+  grad.addColorStop(0, 'rgba(0,0,0,1)'); grad.addColorStop(0.65, 'rgba(0,0,0,1)'); grad.addColorStop(1, 'rgba(0,0,0,0)');
+  fc.fillStyle = grad; fc.fillRect(0, 0, FW, FH);
+  fc.globalCompositeOperation = 'source-over';
+  fog.refresh();
 
   // Particella
   const p = scene.textures.createCanvas('spark', 2, 2);

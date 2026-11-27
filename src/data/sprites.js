@@ -461,6 +461,58 @@ export const SPRITES = {
     "..jjjj..........jjjj..",
     ".nnnnn..........nnnnn."
   ],
+  "ladro": [
+    "....gggggg....",
+    "...gggggggg...",
+    "...gKKKKKKg...",
+    "...KwKKKKwK...",
+    "...KKKKKKKK...",
+    "....ssssss....",
+    "..gggggggggg..",
+    ".gggggggggggg.",
+    ".gg.gggggg.gg.",
+    ".ss.gggggg.ss.",
+    "....gggggg....",
+    "....nnnnnn....",
+    "...nnn..nnn...",
+    "...nnn..nnn...",
+    "..KKK....KKK.."
+  ],
+  "telefono": [
+    "nnnnnn",
+    "nGGGGn",
+    "nGGGGn",
+    "nGGGGn",
+    "nGGGGn",
+    "nGGGGn",
+    "nnwwnn"
+  ],
+  "anello": [
+    "...xxxxxx...",
+    ".xxwwwwwwxx.",
+    "xxw......wxx",
+    "xxw......wxx",
+    ".xxwwwwwwxx.",
+    "...xxxxxx..."
+  ],
+  "sigaretta": [
+    "wwwwwwor"
+  ],
+  "ventilatore": [
+    "...xxxxxxxx...",
+    "..x...BB...x..",
+    ".x....BB....x.",
+    ".x.BB.BB.BB.x.",
+    "x...BBKKBB...x",
+    "x..BBBKKBBB..x",
+    ".x.BB....BB.x.",
+    ".x....BB....x.",
+    "..x...BB...x..",
+    "...xxxxxxxx...",
+    "......xx......",
+    "......xx......",
+    "....xxxxxx...."
+  ],
   "cuore": [
     ".rr.rr.",
     "rrrrrrr",

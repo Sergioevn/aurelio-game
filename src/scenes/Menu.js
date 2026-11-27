@@ -48,6 +48,7 @@ export class Menu extends Phaser.Scene {
     // Link di prova: ...?mini=montagna apre direttamente il mini-gioco
     const mini = new URLSearchParams(location.search).get('mini');
     if (mini === 'montagna') { this.scene.start('MiniMontagna', { standalone: true }); return; }
+    if (mini === 'nebbia') { this.scene.start('MiniNebbia', { standalone: true }); return; }
     this.scene.start('Level');
   }
 
