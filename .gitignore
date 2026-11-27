@@ -1,0 +1,7 @@
+# foto originali degli amici: NON caricarle (repo pubblico)
+foto/
+refs/
+*.jpg
+*.jpeg
+__pycache__/
+.DS_Store
