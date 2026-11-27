@@ -3,7 +3,7 @@ import { sfx } from '../sfx.js';
 import { FRIENDS } from '../data/characters.js';
 
 // Schermata finale: Aurelio ha battuto tutti gli amici
-export const MESSAGGIO_SERGIO = '[QUI IL MESSAGGIO\nDI SERGIO]';
+export const MESSAGGIO_SERGIO = "PER QUESTA VOLTA\nL'HAI VINTA TU";
 
 export class Finale extends Phaser.Scene {
   constructor() { super('Finale'); }
@@ -15,7 +15,7 @@ export class Finale extends Phaser.Scene {
 
     this.add.tileSprite(W / 2, H / 2, W, H, 'road').setAlpha(0.35);
     txt(this, W / 2, 56, 'HAI VINTO!', 20, '#f4d03f');
-    txt(this, W / 2, 88, "AURELIO E' SOPRAVVISSUTO\nALL'ITALIA", 8, '#ffffff');
+    txt(this, W / 2, 88, "AURELIO È SOPRAVVISSUTO\nALL'ITALIA", 8, '#ffffff');
 
     const a = this.add.image(W / 2, 150, 'aurelio').setScale(3);
     this.tweens.add({ targets: a, y: 140, duration: 350, yoyo: true, repeat: -1, ease: 'Sine.out' });
