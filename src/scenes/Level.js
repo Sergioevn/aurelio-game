@@ -1,6 +1,6 @@
 import { W, H, txt, PLAYER_Y } from '../util.js';
 import { sfx } from '../sfx.js';
-import { FRIENDS, BOOSTERS, OBSTACLES, CRUTCHES, SPAWN_WEIGHTS, BOSS, MONTAGNA } from '../data/characters.js';
+import { FRIENDS, BOOSTERS, OBSTACLES, CRUTCHES, DONKEY, LEVEL, SPAWN_WEIGHTS, BOSS, MONTAGNA } from '../data/characters.js';
 
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
@@ -21,6 +21,7 @@ export class Level extends Phaser.Scene {
     this.player.body.setSize(12, 20).setOffset(3, 4);
     this.racket = this.add.image(0, 0, 'racchetta').setScale(1.6).setDepth(6).setVisible(false);
     this.crutches = this.add.image(0, 0, 'stampelle').setScale(2).setDepth(4).setVisible(false);
+    this.donkey = this.add.image(0, 0, 'asino').setScale(3).setDepth(6).setVisible(false);
 
     // Controlli: trascina il dito (o tieni premuto) per spostarti; frecce su PC
     this.targetX = null;
@@ -87,7 +88,7 @@ export class Level extends Phaser.Scene {
     this.spawnMs -= dt;
     if (this.spawnMs <= 0) {
       this.spawnRandom(fall);
-      const base = Math.max(380, 950 - this.elapsed / 1000 * 9);
+      const base = Math.max(450, 950 - this.elapsed / 1000 * 9);
       this.spawnMs = this.boss ? base * 1.8 : base;
     }
     if (this.elapsed >= this.nextFriendAt && !this.items.getChildren().some(i => i.kind === 'friend')) {
@@ -105,13 +106,15 @@ export class Level extends Phaser.Scene {
     }
   }
 
-  fallSpeed() { return Math.min(110 + this.elapsed / 1000 * 3.5, 300); }
+  fallSpeed() { return Math.min(LEVEL.startSpeed + this.elapsed / 1000 * LEVEL.accel, LEVEL.maxSpeed); }
   score() { return Math.floor(this.distance) + this.bonus; }
 
   movePlayer(dt) {
     const p = this.player;
     let speed = 280 * (this.effects.speed ? 1.7 : 1);
     if (this.effects.crutches) speed *= CRUTCHES.speed;
+    if (this.effects.riding) speed *= DONKEY.rideSpeed;
+    else if (this.effects.wide) speed *= DONKEY.wideSpeed;
     if (this.effects.stuck) speed = 0;
     const step = speed * dt / 1000;
     if (this.keys?.left.isDown) p.x -= step;
@@ -120,7 +123,17 @@ export class Level extends Phaser.Scene {
       const dx = this.targetX - p.x;
       p.x += Math.sign(dx) * Math.min(Math.abs(dx), step);
     }
+    if (this.effects.riding) p.x += Math.sin(this.elapsed / 300) * 60 * dt / 1000; // l'asino va un po' dove vuole lui
     p.x = Phaser.Math.Clamp(p.x, 34, W - 34);
+
+    // Gambe larghe dopo l'asino: occupa più spazio
+    const wide = !!this.effects.wide;
+    if (wide !== this.isWide) {
+      this.isWide = wide;
+      p.setTexture(wide ? 'aurelio_larghe' : 'aurelio');
+      if (wide) p.body.setSize(18, 20).setOffset(3, 4); else p.body.setSize(12, 20).setOffset(3, 4);
+    }
+    if (wide) p.setAngle(Math.sin(this.elapsed / 120) * 6); else p.setAngle(0);
 
     // Stampelle rosse: Aurelio zoppica
     const lame = !!this.effects.crutches;
@@ -130,6 +143,15 @@ export class Level extends Phaser.Scene {
       p.y = PLAYER_Y - hop;
       this.crutches.setPosition(p.x, PLAYER_Y + 7 - hop * 0.3).setAngle(Math.sin(this.elapsed / 140) * 4);
     } else p.y = PLAYER_Y;
+
+    // In groppa all'asino
+    const riding = !!this.effects.riding;
+    this.donkey.setVisible(riding);
+    if (riding) {
+      const bob = Math.abs(Math.sin(this.elapsed / 110)) * 3;
+      p.y = PLAYER_Y - 22 - bob;
+      this.donkey.setPosition(p.x - 4, PLAYER_Y + 12 - bob * 0.3).setFlipX(Math.sin(this.elapsed / 300) < 0);
+    }
     p.setFlipX(this.targetX !== null && this.targetX < p.x - 2);
 
     this.racket.setVisible(!!this.effects.padel);
@@ -144,11 +166,17 @@ export class Level extends Phaser.Scene {
   }
 
   tickEffects(dt) {
-    const labels = { speed: 'TURBO', double: 'x2', invincible: 'INVINCIBILE', padel: 'PADEL', stuck: 'SUL DIVANO', crutches: 'STAMPELLE', ski: 'SCI-BLASTER' };
+    const labels = { riding: 'ASINO', wide: 'GAMBE LARGHE', speed: 'TURBO', double: 'x2', invincible: 'INVINCIBILE', padel: 'PADEL', stuck: 'SUL DIVANO', crutches: 'STAMPELLE', ski: 'SCI-BLASTER' };
     const active = [];
     for (const k of Object.keys(this.effects)) {
       this.effects[k] -= dt;
-      if (this.effects[k] <= 0) delete this.effects[k];
+      if (this.effects[k] <= 0) {
+        delete this.effects[k];
+        if (k === 'riding') { // scende dall'asino... a gambe larghe
+          this.effects.wide = DONKEY.wideMs;
+          this.floatText(this.player.x, this.player.y - 40, 'AHI, LE GAMBE...', '#ff9ecb');
+        }
+      }
       else active.push(labels[k] + ' ' + Math.ceil(this.effects[k] / 1000));
     }
     this.effectText.setText(active.join('  '));
@@ -160,10 +188,11 @@ export class Level extends Phaser.Scene {
     let r = Math.random() * entries.reduce((s, [, w]) => s + w, 0);
     let kind = entries[0][0];
     for (const [k, w] of entries) { if ((r -= w) < 0) { kind = k; break; } }
-    const it = this.items.create(Phaser.Math.Between(40, W - 40), -20, kind).setScale(2);
+    const it = this.items.create(Phaser.Math.Between(40, W - 40), -20, kind).setScale(kind === 'asino' ? 2.5 : 2);
     it.kind = kind; it.seed = Math.random() * 1000;
     it.setVelocityY(fall * Phaser.Math.FloatBetween(0.9, 1.1));
     if (kind === 'pizza') it.body.setSize(12, 12).setOffset(1, 9); // la puzza non conta come ostacolo
+    if (kind === 'asino') it.body.setSize(18, 10).setOffset(2, 4);
   }
 
   spawnFriend(fall) {
@@ -185,6 +214,14 @@ export class Level extends Phaser.Scene {
       if (this.effects.padel) { this.smash(it, 'SMASH!'); return; }
       if (this.effects.invincible) { this.smash(it, 'OLE!'); return; }
       if (this.hurtMs > 0) return;
+      if (OBSTACLES[k].donkey) { // l'asino non toglie vite: ti carica in groppa
+        if (this.effects.riding) return;
+        delete this.effects.wide;
+        this.effects.riding = DONKEY.rideMs; this.hurtMs = 600; sfx.hit();
+        this.floatText(it.x, it.y, OBSTACLES[k].label, '#ff9ecb');
+        it.destroy();
+        return;
+      }
       this.lives--; this.hurtMs = 1200; this.refreshHearts();
       this.cameras.main.shake(150, 0.01); sfx.hit();
       this.floatText(it.x, it.y, OBSTACLES[k].label, '#ff6b5b');

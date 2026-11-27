@@ -110,13 +110,19 @@ export class MiniMontagna extends Phaser.Scene {
     for (const it of [...this.items.getChildren()]) {
       it.y += scroll * (it.kind === 'sciatore' ? it.fast : 1);
       if (it.kind === 'sciatore' && !it.hitDone) {
-        // gli sciatori girano attorno alle porte: il varco resta sempre libero
+        // Gli sciatori possono passare in mezzo alle porte, ma stanno attaccati a un palo
+        // e lasciano sempre libero un varco largo abbastanza per Aurelio (M.freeGap).
+        // In ogni porta può passare un solo sciatore alla volta.
         let x = it.baseX + Math.sin((this.elapsed + it.seed) / 330) * it.amp;
         for (const g of this.allGates) {
           const [a, b] = g.poles;
-          if (Math.abs(it.y - a.y) > 50) continue;
+          if (Math.abs(it.y - a.y) > 50) { if (g.skier === it) g.skier = null; continue; }
           const lo = a.x - 18, hi = b.x + 18;
-          if (x > lo && x < hi) x = (x - lo < hi - x) ? lo : hi;
+          if (x <= lo || x >= hi) continue;
+          if (g.skier && g.skier !== it && g.skier.active) { x = (x - lo < hi - x) ? lo : hi; continue; }
+          g.skier = it;
+          const left = x < (a.x + b.x) / 2;
+          x = left ? Phaser.Math.Clamp(x, a.x + 12, b.x - M.freeGap - 10) : Phaser.Math.Clamp(x, a.x + M.freeGap + 10, b.x - 12);
         }
         it.x += (x - it.x) * Math.min(1, dt / 60);
       }
@@ -159,8 +165,8 @@ export class MiniMontagna extends Phaser.Scene {
     this.spawnMs -= dt;
     if (this.spawnMs <= 0 && this.elapsed < M.pistaMs - 1500) {
       if (Math.random() < 0.55) this.spawnGate();
-      else { this.spawnSkier(0); if (Math.random() < 0.1 + this.elapsed / M.pistaMs * 0.2) this.spawnSkier(-70); }
-      this.spawnMs = Math.max(680, 1100 - this.elapsed / 1000 * 20);
+      else { this.spawnSkier(0); if (Math.random() < 0.25 + this.elapsed / M.pistaMs * 0.3) this.spawnSkier(-70); }
+      this.spawnMs = Math.max(600, 1000 - this.elapsed / 1000 * 22);
     }
     if (Math.random() < dt / 450) {
       const { l, r } = this.corridor(this.dist + H + 30);
@@ -200,7 +206,7 @@ export class MiniMontagna extends Phaser.Scene {
     it.kind = 'sciatore'; it.seed = Math.random() * 3000;
     it.amp = Math.min(35, (r - l) / 2 - 16);
     it.baseX = Phaser.Math.Between(Math.ceil(l + 16 + it.amp), Math.floor(Math.max(l + 16 + it.amp, r - 16 - it.amp)));
-    it.fast = Phaser.Math.FloatBetween(1.45, 1.75);
+    it.fast = Phaser.Math.FloatBetween(1.6, 1.95);
     it.x = it.baseX; it.body.setSize(8, 10).setOffset(3, 4);
   }
 

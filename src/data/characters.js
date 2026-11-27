@@ -22,15 +22,22 @@ export const BOOSTERS = {
 // crutches: true = Aurelio finisce in stampelle rosse (più lento per un po')
 export const OBSTACLES = {
   pizza:  { label: 'LA PIZZA DI HAKIM!' },
-  roccia: { label: 'LA ROCCIA!', crutches: true }
+  roccia: { label: 'LA ROCCIA!', crutches: true },
+  asino:  { label: 'IN GROPPA!', donkey: true }   // non toglie vite: 3 s sull'asino, poi 6 s a gambe larghe
 };
+
+// Asino da cavalcare
+export const DONKEY = { rideMs: 3000, wideMs: 6000, rideSpeed: 0.55, wideSpeed: 0.85 };
+
+// Livello principale: velocità
+export const LEVEL = { startSpeed: 110, accel: 3.5, maxSpeed: 230 };
 
 // Stampelle rosse dopo la roccia
 export const CRUTCHES = { ms: 6000, speed: 0.5, label: 'IN STAMPELLE...' };
 
 // Probabilità di comparsa (pesi relativi) nel livello principale
 export const SPAWN_WEIGHTS = {
-  pizza: 30, roccia: 30,
+  pizza: 26, roccia: 26, asino: 11,
   spritz: 7, birra: 7, vino: 4, racchetta: 3
 };
 
@@ -48,11 +55,12 @@ export const BOSS = {
 // Mini-gioco Montagna (Javier)
 export const MONTAGNA = {
   pistaMs: 20000,        // durata fase 1 (pista)
-  maxCrash: 4,           // schianti prima di perdere
+  maxCrash: 3,           // schianti prima di perdere
   pistaHalfStart: 95,    // mezza larghezza della pista all'inizio (px)
-  pistaHalfEnd: 70,      // ...e alla fine: le reti si stringono
-  gateGapStart: 62,      // spazio tra i due pali di una porta
-  gateGapEnd: 52,
+  pistaHalfEnd: 72,      // ...e alla fine: le reti si stringono
+  gateGapStart: 104,     // spazio tra i due pali di una porta (larghe: ci passano anche gli sciatori)
+  gateGapEnd: 92,
+  freeGap: 44,           // spazio che uno sciatore in porta lascia sempre libero per Aurelio
   gatePoints: 20,        // punti per ogni porta (si sommano al premio se vince)
   gatesForBoost: 3,      // porte di fila per il vin brulé
   boostMs: 4000,         // durata vin brulé (invincibile)
