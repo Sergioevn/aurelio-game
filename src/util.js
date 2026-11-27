@@ -41,19 +41,33 @@ export function makeTextures(scene) {
     tex.refresh();
   }
 
-  // Strada (sfondo che scorre)
-  const road = scene.textures.createCanvas('road', W, 64);
+  // Viale Lombardia, Milano (sfondo che scorre): viale alberato, 2 corsie per senso
+  const RH = 96;
+  const road = scene.textures.createCanvas('road', W, RH);
   const c = road.getContext();
-  c.fillStyle = '#4a4a55'; c.fillRect(0, 0, W, 64);
-  for (let i = 0; i < 90; i++) { // granulosità asfalto
+  c.fillStyle = '#4a4a55'; c.fillRect(0, 0, W, RH);
+  for (let i = 0; i < 140; i++) { // granulosità asfalto
     c.fillStyle = Math.random() < 0.5 ? '#43434d' : '#52525e';
-    c.fillRect(Math.floor(Math.random() * W), Math.floor(Math.random() * 64), 2, 1);
+    c.fillRect(Math.floor(Math.random() * W), Math.floor(Math.random() * RH), 2, 1);
   }
-  c.fillStyle = '#b8a888'; c.fillRect(0, 0, 22, 64); c.fillRect(W - 22, 0, 22, 64); // marciapiedi
-  c.fillStyle = '#9c8e72';
-  for (let y = 0; y < 64; y += 16) { c.fillRect(0, y, 22, 1); c.fillRect(W - 22, y, 22, 1); }
-  c.fillStyle = '#e8e8e8'; c.fillRect(22, 0, 2, 64); c.fillRect(W - 24, 0, 2, 64);
-  c.fillStyle = '#f4d03f'; c.fillRect(W / 2 - 1, 8, 3, 28); // linea di mezzeria
+  const SW = 26; // marciapiedi
+  c.fillStyle = '#b0aaa0'; c.fillRect(0, 0, SW, RH); c.fillRect(W - SW, 0, SW, RH);
+  c.fillStyle = '#968f84';
+  for (let y = 0; y < RH; y += 12) { c.fillRect(0, y, SW, 1); c.fillRect(W - SW, y, SW, 1); }
+  c.fillStyle = '#d8d4cc'; c.fillRect(SW, 0, 2, RH); c.fillRect(W - SW - 2, 0, 2, RH); // cordoli
+  // Linee: doppia continua al centro, tratteggiate tra le corsie
+  c.fillStyle = '#e8e8e8';
+  c.fillRect(W / 2 - 3, 0, 2, RH); c.fillRect(W / 2 + 1, 0, 2, RH);
+  const lane = (W / 2 - SW) / 2;
+  for (let y = 6; y < RH; y += 32) { c.fillRect(SW + lane - 1, y, 2, 16); c.fillRect(W - SW - lane - 1, y, 2, 16); }
+  // Alberi del viale (chioma tonda che sporge sulla strada)
+  const tree = (cx, cy) => {
+    c.fillStyle = '#1a1423'; c.beginPath(); c.arc(cx, cy, 15, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#2f5e2c'; c.beginPath(); c.arc(cx, cy, 14, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#3f7d3a'; c.beginPath(); c.arc(cx - 3, cy - 3, 9, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#5a9a4a'; c.fillRect(cx - 7, cy - 8, 3, 3); c.fillRect(cx + 2, cy - 5, 2, 2);
+  };
+  tree(8, 24); tree(W - 8, 72);
   road.refresh();
 
   // Particella

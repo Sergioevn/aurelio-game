@@ -1,6 +1,6 @@
 import { W, H, txt } from '../util.js';
 import { sfx } from '../sfx.js';
-import { FRIENDS, BOOSTERS, OBSTACLES, SPAWN_WEIGHTS, BOSS } from '../data/characters.js';
+import { FRIENDS, BOOSTERS, OBSTACLES, CRUTCHES, SPAWN_WEIGHTS, BOSS } from '../data/characters.js';
 
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
@@ -20,6 +20,7 @@ export class Level extends Phaser.Scene {
     this.player = this.physics.add.sprite(W / 2, H - 62, 'aurelio').setScale(2).setDepth(5);
     this.player.body.setSize(12, 20).setOffset(3, 4);
     this.racket = this.add.image(0, 0, 'racchetta').setScale(1.6).setDepth(6).setVisible(false);
+    this.crutches = this.add.image(0, 0, 'stampelle').setScale(2).setDepth(4).setVisible(false);
 
     // Controlli: trascina il dito (o tieni premuto) per spostarti; frecce su PC
     this.targetX = null;
@@ -38,8 +39,13 @@ export class Level extends Phaser.Scene {
     this.effectText = txt(this, W / 2, 36, '', 7, '#bfe3f0').setDepth(21);
     this.refreshHearts();
 
-    const hint = txt(this, W / 2, H / 2, 'TRASCINA IL DITO\nPER MUOVERTI', 9).setDepth(30);
-    this.tweens.add({ targets: hint, alpha: 0, delay: 1800, duration: 600, onComplete: () => hint.destroy() });
+    // Cartello stradale: siamo in viale Lombardia
+    const sign = this.add.container(W / 2, H / 2 - 50).setDepth(30);
+    sign.add(this.add.rectangle(0, 0, 196, 42, 0xf4f1ea).setStrokeStyle(3, 0x1a1423));
+    sign.add(this.add.text(0, -6, 'VIALE LOMBARDIA', { fontFamily: 'PressStart', fontSize: '9px', color: '#1a1423' }).setOrigin(0.5).setResolution(4));
+    sign.add(this.add.text(0, 10, 'MILANO', { fontFamily: 'PressStart', fontSize: '6px', color: '#5a4030' }).setOrigin(0.5).setResolution(4));
+    const hint = txt(this, W / 2, H / 2 + 10, 'TRASCINA IL DITO\nPER MUOVERTI', 9).setDepth(30);
+    this.tweens.add({ targets: [hint, sign], alpha: 0, delay: 2200, duration: 600, onComplete: () => { hint.destroy(); sign.destroy(); } });
   }
 
   // ---------- ciclo di gioco ----------
@@ -70,9 +76,8 @@ export class Level extends Phaser.Scene {
     if (!this.boss && this.elapsed >= this.nextBossAt) this.startBoss();
     if (this.boss) this.updateBoss(t, dt, fall);
 
-    // Movimento laterale dei piccioni + pulizia
+    // Pulizia oggetti usciti dallo schermo
     for (const it of [...this.items.getChildren()]) {
-      if (it.kind === 'piccione') it.x += Math.sin((this.elapsed + it.seed) / 220) * 0.9;
       if (it.y > H + 40 || it.y < -90) it.destroy();
     }
   }
@@ -83,6 +88,7 @@ export class Level extends Phaser.Scene {
   movePlayer(dt) {
     const p = this.player;
     let speed = 280 * (this.effects.speed ? 1.7 : 1);
+    if (this.effects.crutches) speed *= CRUTCHES.speed;
     if (this.effects.stuck) speed = 0;
     const step = speed * dt / 1000;
     if (this.keys?.left.isDown) p.x -= step;
@@ -92,6 +98,15 @@ export class Level extends Phaser.Scene {
       p.x += Math.sign(dx) * Math.min(Math.abs(dx), step);
     }
     p.x = Phaser.Math.Clamp(p.x, 34, W - 34);
+
+    // Stampelle rosse: Aurelio zoppica
+    const lame = !!this.effects.crutches;
+    this.crutches.setVisible(lame);
+    if (lame) {
+      const hop = Math.abs(Math.sin(this.elapsed / 140)) * 3;
+      p.y = H - 62 - hop;
+      this.crutches.setPosition(p.x, H - 55 - hop * 0.3).setAngle(Math.sin(this.elapsed / 140) * 4);
+    } else p.y = H - 62;
     p.setFlipX(this.targetX !== null && this.targetX < p.x - 2);
 
     this.racket.setVisible(!!this.effects.padel);
@@ -106,7 +121,7 @@ export class Level extends Phaser.Scene {
   }
 
   tickEffects(dt) {
-    const labels = { speed: 'TURBO', double: 'x2', invincible: 'INVINCIBILE', padel: 'PADEL', stuck: 'SUL DIVANO' };
+    const labels = { speed: 'TURBO', double: 'x2', invincible: 'INVINCIBILE', padel: 'PADEL', stuck: 'SUL DIVANO', crutches: 'STAMPELLE' };
     const active = [];
     for (const k of Object.keys(this.effects)) {
       this.effects[k] -= dt;
@@ -124,7 +139,8 @@ export class Level extends Phaser.Scene {
     for (const [k, w] of entries) { if ((r -= w) < 0) { kind = k; break; } }
     const it = this.items.create(Phaser.Math.Between(40, W - 40), -20, kind).setScale(2);
     it.kind = kind; it.seed = Math.random() * 1000;
-    it.setVelocityY(fall * (kind === 'piccione' ? 1.15 : 1) * Phaser.Math.FloatBetween(0.9, 1.1));
+    it.setVelocityY(fall * Phaser.Math.FloatBetween(0.9, 1.1));
+    if (kind === 'pizza') it.setAngularVelocity(Phaser.Math.Between(-90, 90)); // la pizza vola girando
   }
 
   spawnFriend(fall) {
@@ -149,6 +165,10 @@ export class Level extends Phaser.Scene {
       this.lives--; this.hurtMs = 1200; this.refreshHearts();
       this.cameras.main.shake(150, 0.01); sfx.hit();
       this.floatText(it.x, it.y, OBSTACLES[k].label, '#ff6b5b');
+      if (OBSTACLES[k].crutches) {
+        this.effects.crutches = CRUTCHES.ms;
+        this.time.delayedCall(450, () => this.floatText(this.player.x, this.player.y - 44, CRUTCHES.label, '#ff9ecb'));
+      }
       it.destroy();
       if (this.lives <= 0) this.gameOver();
       return;

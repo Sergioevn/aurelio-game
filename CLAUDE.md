@@ -20,7 +20,8 @@ Un gioco per browser, installabile come **Progressive Web App**, da regalare ad 
 - **Drink alcolici = booster** (es. spritz, birra, sangria, tinto de verano, Nebbiolo): danno velocità, punti doppi o invincibilità per pochi secondi. Ogni drink ha il suo effetto.
 - **Racchetta da padel = super-potere:** per circa 8 s Aurelio diventa fortissimo e "smasha" gli ostacoli.
 - **Maggipinto = boss.** Inside joke: non esce mai e, al massimo, invita Aurelio a stare a casa sua. Dopo ~35 s, e poi ogni ~60 s, entra in cima allo schermo e per ~15 s lancia **inviti a casa** (casette). Se un invito colpisce Aurelio, lui resta bloccato **sul divano** per 2 s ("UN ALTRO EPISODIO?"). Con la **racchetta da padel** Aurelio rimanda indietro l'invito: se la colpisce, lei torna a casa (+200).
-- Ostacoli generici italiani: [motorino, controllore, burocrazia… da confermare].
+- **Ambientazione:** il livello principale è **viale Lombardia, Milano** (viale alberato, 2 corsie per senso; cartello all'inizio della partita).
+- **Ostacoli:** la **pizza di Hakim** e la **roccia**. Entrambi tolgono una vita. **Inside joke roccia:** Aurelio si è fratturato un piede cadendo da una roccia → quando la prende finisce **in stampelle rosse** per ~6 s (si muove a metà velocità e zoppica).
 
 ## 4. Mini-giochi (uno per amico)
 | Amico | Mini-gioco | Meccanica |
@@ -85,6 +86,7 @@ Un gioco per browser, installabile come **Progressive Web App**, da regalare ad 
 ## 11. Stato
 - 27/11: concept e mini-giochi definiti.
 - 27/11: **MVP online** su https://sergioevn.github.io/aurelio-game/ con menu, livello principale (ostacoli cono/multa/piccione, booster spritz/birra/Nebbiolo/racchetta, 3 vite, punteggio), facce degli amici (per ora mostrano un annuncio "mini-gioco prossimamente"), boss Maggipinto, game over con record, PWA offline e icone. Prossimo passo: mini-gioco Montagna (Javier).
+- 27/11: ambientazione **viale Lombardia**; ostacoli cambiati in **pizza di Hakim** e **roccia** (la roccia mette Aurelio in stampelle rosse). CACHE_VERSION v2. Prossimo passo: mini-gioco Montagna (Javier).
 - Note tecniche: gli sprite sono pixel art scritta come testo in `src/data/sprites.js`; le icone si rigenerano con `python3 tools/make_icons.py`. Per provarlo in locale: `python3 -m http.server 8000`. A ogni rilascio va incrementato `CACHE_VERSION` in `sw.js`.
 
 ## 12. Decisioni prese
@@ -92,3 +94,4 @@ Un gioco per browser, installabile come **Progressive Web App**, da regalare ad 
 - Mini-gioco di Sergio = calisthenics, con l'effetto DOMS come conseguenza nel livello.
 - Drink alcolici e racchetta da padel come booster; Maggipinto come mostro.
 - Pixel art 16 bit; hosting su GitHub Pages.
+- Livello principale in viale Lombardia (Milano); ostacoli = pizza di Hakim e roccia (→ stampelle rosse).

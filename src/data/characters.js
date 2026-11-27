@@ -18,15 +18,18 @@ export const BOOSTERS = {
 };
 
 // Ostacoli: toccarli costa una vita
+// crutches: true = Aurelio finisce in stampelle rosse (più lento per un po')
 export const OBSTACLES = {
-  cono:     { label: 'LAVORI IN CORSO' },
-  multa:    { label: 'MULTA!' },
-  piccione: { label: 'PICCIONE!' }
+  pizza:  { label: 'LA PIZZA DI HAKIM!' },
+  roccia: { label: 'LA ROCCIA!', crutches: true }
 };
+
+// Stampelle rosse dopo la roccia
+export const CRUTCHES = { ms: 6000, speed: 0.5, label: 'IN STAMPELLE...' };
 
 // Probabilità di comparsa (pesi relativi) nel livello principale
 export const SPAWN_WEIGHTS = {
-  cono: 22, multa: 18, piccione: 20,
+  pizza: 30, roccia: 30,
   spritz: 7, birra: 7, vino: 4, racchetta: 3
 };
 

@@ -7,7 +7,8 @@ export const PALETTE = {
   "w": "#f4f1ea", "g": "#2a2a2a", "e": "#1a1423", "b": "#4a3020", "j": "#3d5a8a", "J": "#2c4166",
   "n": "#222222", "r": "#c0392b", "o": "#f08a24", "y": "#f4d03f", "B": "#2f4b7c", "m": "#8a2b2b",
   "l": "#a07e5c", "L": "#c8a682", "c": "#c8b49a", "K": "#151515", "R": "#d03050", "a": "#5a2a1c",
-  "A": "#8a4430", "G": "#bfe3f0", "f": "#fff8e0", "p": "#7a1236", "v": "#3a8a3a", "x": "#8a8a96"
+  "A": "#8a4430", "G": "#bfe3f0", "f": "#fff8e0", "p": "#7a1236", "v": "#3a8a3a", "x": "#8a8a96",
+  "q": "#6e6a66", "Q": "#9a948c", "z": "#e23b2e", "Z": "#ffd27a", "t": "#d9893a", "T": "#3f7d3a", "u": "#2f5e2c"
 };
 
 export const SPRITES = {
@@ -187,39 +188,48 @@ export const SPRITES = {
     ".....KK.....",
     "....KKKK...."
   ],
-  "cono": [
-    ".....oo.....",
-    "....oooo....",
-    "....wwww....",
-    "...oooooo...",
-    "...oooooo...",
-    "..wwwwwwww..",
-    "..oooooooo..",
-    ".oooooooooo.",
-    "KKKKKKKKKKKK"
+  "pizza": [
+    "tttttttttttt",
+    "tZZZZZZZZZZt",
+    ".ZZrrZZZZZZ.",
+    ".ZrrrZZZrrZ.",
+    "..ZrZZZTrZ..",
+    "..ZZZZZZZZ..",
+    "...ZZrrZZ...",
+    "...ZZrrZZ...",
+    "....ZZZZ....",
+    "....ZZTZ....",
+    ".....ZZ.....",
+    ".....Z......"
   ],
-  "multa": [
-    ".wwwwwwwwww.",
-    ".wrrrrrrrrw.",
-    ".wwwwwwwwww.",
-    ".wKKKKKwwww.",
-    ".wwwwwwwwww.",
-    ".wKKKKKKKww.",
-    ".wwwwwwwwww.",
-    ".wKKKwwrrrw.",
-    ".wwwwwwrrrw.",
-    ".wwwwwwwwww."
+  "roccia": [
+    "....qqqq....",
+    "..qqQQqqqq..",
+    ".qQQQqqqqqq.",
+    ".qQQqqqqKqq.",
+    "qqQqqqqqqKqq",
+    "qqqqqKqqqqqq",
+    "qqqqqqKqqqQq",
+    "qqqqqqqqqqqq",
+    ".KKKKKKKKKK."
   ],
-  "piccione": [
-    ".....xxx....",
-    "....xxexo...",
-    "....xxxx....",
-    "..xxxxxxx...",
-    ".xxxxvxxxx..",
-    "xxxxxxxxxx..",
-    ".xxxxxxxx...",
-    "...xxxxx....",
-    "....o..o...."
+  "stampelle": [
+    "zzz................zzz",
+    ".z..................z.",
+    ".z..................z.",
+    ".z..................z.",
+    ".z..................z.",
+    ".z..................z.",
+    ".zz................zz.",
+    ".z..................z.",
+    ".z..................z.",
+    ".z..................z.",
+    ".z..................z.",
+    ".z..................z.",
+    ".z..................z.",
+    ".z..................z.",
+    ".z..................z.",
+    ".K..................K."
   ],
   "invito": [
     ".....rr.....",
