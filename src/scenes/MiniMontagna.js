@@ -320,14 +320,14 @@ export class MiniMontagna extends Phaser.Scene {
     this.fallY = 110;
     this.faller = this.add.image(W / 2, this.fallY, 'aurelio').setScale(2).setDepth(8).setAngle(180);
     this.stars.setDepth(9);
-    this.glove = this.add.image(W / 2, this.fallY + 210, 'guanto').setScale(2.4).setDepth(7);
-    this.gap = 210; this.gloveBase = Math.random() < 0.5 ? 70 : W - 80; this.gloveKick = 0;
+    this.glove = this.add.image(W / 2, this.fallY + 185, 'guanto').setScale(2.4).setDepth(7);
+    this.gap = 185; this.gloveBase = Math.random() < 0.5 ? 70 : W - 80; this.gloveKick = 0;
     this.obst = [];
-    this.elapsed = 0; this.spawnMs = 900; this.gustMs = 2200; this.stunMs = 0; this.targetX = null;
+    this.elapsed = 0; this.spawnMs = 900; this.bombMs = 600; this.gustMs = 2200; this.stunMs = 0; this.targetX = null;
     // altimetro
     this.altBar = this.add.rectangle(W - 10, 60, 6, H - 200, 0xffffff).setOrigin(0.5, 0).setStrokeStyle(2, 0x1a1423).setDepth(21);
     this.altMark = this.add.rectangle(W - 10, 60, 12, 6, 0xf4d03f).setStrokeStyle(2, 0x1a1423).setDepth(22);
-    const hint = txt(this, W / 2, H / 2 + 30, 'RESTA SOPRA IL GUANTO\nPER RAGGIUNGERLO!', 8, '#ffffff').setDepth(25);
+    const hint = txt(this, W / 2, H / 2 + 30, 'RESTA SOPRA IL GUANTO\nE PRENDI I BOMBARDINI!', 8, '#ffffff').setDepth(25);
     this.tweens.add({ targets: hint, alpha: 0, delay: 1800, duration: 400, onComplete: () => hint.destroy() });
     this.phase = 'caduta';
   }
@@ -386,9 +386,26 @@ export class MiniMontagna extends Phaser.Scene {
         o.kind = 'pilone'; this.obst.push(o);
       }
     }
+    // Bombardini: prenderli fa avvicinare al guanto
+    this.bombMs -= dt;
+    if (this.bombMs <= 0 && this.elapsed < M.cadutaMs - 1200) {
+      this.bombMs = M.bombardinoEvery + Phaser.Math.Between(-200, 200);
+      const bx = Phaser.Math.Clamp(this.glove.x + Phaser.Math.Between(-70, 70), 30, W - 40);
+      const o = this.add.image(bx, H + 20, 'bombardino').setScale(2).setDepth(7);
+      o.kind = 'bombardino'; this.obst.push(o);
+      this.tweens.add({ targets: o, scale: 2.4, duration: 300, yoyo: true, repeat: -1 });
+    }
     const pb = new Phaser.Geom.Rectangle(p.x - 12, p.y - 20, 24, 40);
     for (const o of this.obst) {
       o.y -= fall * s;
+      if (o.kind === 'bombardino') {
+        if (!o.hit && Phaser.Geom.Intersects.RectangleToRectangle(pb, o.getBounds())) {
+          o.hit = true; o.setVisible(false); this.bombs = (this.bombs || 0) + 1;
+          this.gap = Math.max(0, this.gap - M.bombardinoGain); sfx.boost();
+          this.floatText(p.x, p.y + 50, 'BOMBARDINO!', '#f4d03f');
+        }
+        continue;
+      }
       if (!o.hit && this.stunMs <= 0 && Phaser.Geom.Intersects.RectangleToRectangle(pb, o.getBounds())) {
         o.hit = true; this.stunMs = 700; this.gap = Math.min(300, this.gap + 70);
         sfx.hit(); this.cameras.main.shake(150, 0.01);

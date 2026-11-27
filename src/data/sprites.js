@@ -405,6 +405,19 @@ export const SPRITES = {
     "...TTTuTTTTuTTTTTuTTTTuTTTT....",
     ".....TT..TTT..TTT..TT..TT......"
   ],
+  "bombardino": [
+    "....wAw.....",
+    "..wwwwwAw...",
+    ".wAwwwAwww..",
+    ".GwwwwwwwG..",
+    ".GZZZZZZZGGG",
+    ".GZZZZZZZG.G",
+    ".GZZtZZZZG.G",
+    ".GZZZZZZtGGG",
+    ".GZZZZZZZG..",
+    ".GGGGGGGGG..",
+    "..GGGGGGG..."
+  ],
   "cuore": [
     ".rr.rr.",
     "rrrrrrr",
