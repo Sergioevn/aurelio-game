@@ -70,6 +70,21 @@ export function makeTextures(scene) {
   tree(8, 24); tree(W - 8, 72);
   road.refresh();
 
+  // Neve della pista
+  const snow = scene.textures.createCanvas('snow', W, 96);
+  const n = snow.getContext();
+  n.fillStyle = '#f2f6fc'; n.fillRect(0, 0, W, 96);
+  for (let i = 0; i < 160; i++) {
+    n.fillStyle = Math.random() < 0.5 ? '#dfe8f4' : '#ffffff';
+    n.fillRect(Math.floor(Math.random() * W), Math.floor(Math.random() * 96), 2, 1);
+  }
+  n.fillStyle = '#d3deec'; // tracce di sci
+  for (let y = 0; y < 96; y++) {
+    const x1 = 60 + Math.round(Math.sin(y / 15.3) * 14), x2 = 190 + Math.round(Math.sin(y / 15.3 + 2) * 18);
+    n.fillRect(x1, y, 1, 1); n.fillRect(x1 + 4, y, 1, 1); n.fillRect(x2, y, 1, 1); n.fillRect(x2 + 4, y, 1, 1);
+  }
+  snow.refresh();
+
   // Particella
   const p = scene.textures.createCanvas('spark', 2, 2);
   p.getContext().fillStyle = '#ffffff'; p.getContext().fillRect(0, 0, 2, 2); p.refresh();

@@ -26,7 +26,7 @@ Un gioco per browser, installabile come **Progressive Web App**, da regalare ad 
 ## 4. Mini-giochi (uno per amico)
 | Amico | Mini-gioco | Meccanica |
 |---|---|---|
-| **Javier** | **Montagna** | Fase 1, pista: Aurelio *risale* la pista ed evita i paletti arancioni e gli sciatori che scendono. Fase 2, seggiovia: Aurelio in bilico, si tocca a sinistra o a destra per tenere l'indicatore di equilibrio al centro. Se esce dalla zona, cade. |
+| **Javier** | **Montagna** ✅ | Javier all'inizio: "ANDIAMO IN MONTAGNA". Fase 1, pista (20 s): Aurelio *risale* la pista ed evita coppie di pali arancioni e sciatori; **inside joke:** se prende un palo si schianta (stelline, "OTRA VEZ LOS PALOS!"), 3 schianti = perso. Fase 2, seggiovia (15 s): tocchi a sinistra/destra per tenere l'indicatore nel verde, con folate di vento; **inside joke:** se esce, Aurelio cade dalla seggiovia ("¡ME CAIGO!", provvisoria) e finisce a testa in giù nella neve. All'arrivo Javier: "¡A LA CAMA A LAS 21:00, QUE MAÑANA SE ESQUÍA OTRA VEZ!". **Vinto:** +300, +1 vita, **sci-blaster** 7 s (spara sci che abbattono pizze e rocce). **Perso:** torna nel livello in stampelle rosse. |
 | **Francesco** | **La serata** | Cadono birre da prendere (punti). Più ne prendi, più sale l'indicatore "sbronza": lo schermo ondeggia e i controlli diventano meno precisi. Acqua e kebab lo fanno scendere. Obiettivo: X birre senza "crollare" prima della fine della serata. |
 | **Sergio** | **Calisthenics** | Gara di trazioni/dip con Sergio: un indicatore sale e scende e si tocca nel momento giusto per fare la ripetizione. A ogni ripetizione sale la barra **DOMS**. Vince chi fa più ripetizioni prima che le braccia cedano. **Inside joke:** dopo il primo allenamento con Sergio, Aurelio ha avuto DOMS così forti da non riuscire a muovere le braccia per mangiare per una settimana. **Conseguenza nel livello:** uscito dal mini-gioco, Aurelio ha l'effetto "DOMS". Per ~15 s non riesce a prendere cibo e drink (gli rimbalzano via) e si muove più lento; compare la scritta "No puedo comer 😭". Se ha vinto la gara, l'effetto dura meno. |
 | **Antonio** | **Il portafoglio** | Antonio è attorno ad Aurelio e cadono "cavolate" da comprare (gadget, sigari, orologi, offerte lampo). Bisogna intercettarle prima che Antonio le prenda. Il portafoglio si svuota a ogni acquisto; si vince se a fine tempo ci sono ancora soldi. |
@@ -87,7 +87,8 @@ Un gioco per browser, installabile come **Progressive Web App**, da regalare ad 
 - 27/11: concept e mini-giochi definiti.
 - 27/11: **MVP online** su https://sergioevn.github.io/aurelio-game/ con menu, livello principale (ostacoli cono/multa/piccione, booster spritz/birra/Nebbiolo/racchetta, 3 vite, punteggio), facce degli amici (per ora mostrano un annuncio "mini-gioco prossimamente"), boss Maggipinto, game over con record, PWA offline e icone. Prossimo passo: mini-gioco Montagna (Javier).
 - 27/11: ambientazione **viale Lombardia**; ostacoli cambiati in **pizza di Hakim** e **roccia** (la roccia mette Aurelio in stampelle rosse). CACHE_VERSION v2. Prossimo passo: mini-gioco Montagna (Javier).
-- Note tecniche: gli sprite sono pixel art scritta come testo in `src/data/sprites.js`; le icone si rigenerano con `python3 tools/make_icons.py`. Per provarlo in locale: `python3 -m http.server 8000`. A ogni rilascio va incrementato `CACHE_VERSION` in `sw.js`.
+- 27/11: **mini-gioco Montagna (Javier) completo** e collegato al livello (prendere Javier lo avvia). Link di prova diretto: https://sergioevn.github.io/aurelio-game/?mini=montagna. CACHE_VERSION v3. Prossimo passo: mini-gioco Nebbia (Lollo). Da confermare con Sergio: scritta "¡ME CAIGO!" della seggiovia.
+- Note tecniche: i mini-giochi sono scene separate; il livello si mette in pausa (`scene.launch` + `scene.pause`) e riceve il risultato con l'evento `resume`. Gli sprite sono pixel art scritta come testo in `src/data/sprites.js`; le icone si rigenerano con `python3 tools/make_icons.py`. Per provarlo in locale: `python3 -m http.server 8000`. A ogni rilascio va incrementato `CACHE_VERSION` in `sw.js`.
 
 ## 12. Decisioni prese
 - Gioco verticale, un livello principale con 5 mini-giochi (uno per amico).
@@ -95,3 +96,4 @@ Un gioco per browser, installabile come **Progressive Web App**, da regalare ad 
 - Drink alcolici e racchetta da padel come booster; Maggipinto come mostro.
 - Pixel art 16 bit; hosting su GitHub Pages.
 - Livello principale in viale Lombardia (Milano); ostacoli = pizza di Hakim e roccia (→ stampelle rosse).
+- Montagna: vinto = +1 vita + sci-blaster; perso = stampelle rosse.

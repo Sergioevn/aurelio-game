@@ -30,5 +30,9 @@ export const sfx = {
   friend() { this.tone([784, 988, 1175, 1568], 0.09, 'triangle', 0.09); },
   boss()   { this.tone([196, 185, 175, 165], 0.15, 'square', 0.05); },
   smash()  { this.tone([1200, 600], 0.05, 'square', 0.05); },
+  shoot()  { this.tone([900, 1400], 0.03, 'square', 0.03); },
+  wind()   { this.tone([180, 220, 200, 160], 0.12, 'triangle', 0.04); },
+  fall()   { this.tone([880, 740, 587, 440, 330, 220], 0.09, 'triangle', 0.08); },
+  win()    { this.tone([523, 659, 784, 1047, 784, 1047], 0.1, 'triangle', 0.09); },
   over()   { this.tone([392, 330, 262, 196], 0.18, 'triangle', 0.08); }
 };

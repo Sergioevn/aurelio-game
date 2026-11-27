@@ -45,6 +45,9 @@ export class Menu extends Phaser.Scene {
 
   go() {
     sfx.unlock(); sfx.pick();
+    // Link di prova: ...?mini=montagna apre direttamente il mini-gioco
+    const mini = new URLSearchParams(location.search).get('mini');
+    if (mini === 'montagna') { this.scene.start('MiniMontagna', { standalone: true }); return; }
     this.scene.start('Level');
   }
 

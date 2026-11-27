@@ -1,6 +1,6 @@
 import { W, H, txt } from '../util.js';
 import { sfx } from '../sfx.js';
-import { FRIENDS, BOOSTERS, OBSTACLES, CRUTCHES, SPAWN_WEIGHTS, BOSS } from '../data/characters.js';
+import { FRIENDS, BOOSTERS, OBSTACLES, CRUTCHES, SPAWN_WEIGHTS, BOSS, MONTAGNA } from '../data/characters.js';
 
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
@@ -30,6 +30,18 @@ export class Level extends Phaser.Scene {
     this.keys = this.input.keyboard?.createCursorKeys();
 
     this.physics.add.overlap(this.player, this.items, (pl, it) => this.onTouch(it));
+
+    // Sci-blaster: gli sci sparati abbattono pizze e rocce
+    this.shots = this.physics.add.group(); this.shootMs = 0;
+    this.physics.add.overlap(this.shots, this.items, (sh, it) => {
+      if (!sh.active || !it.active || !OBSTACLES[it.kind]) return;
+      sh.destroy(); this.smash(it, 'BAM!');
+    });
+
+    // Ritorno da un mini-gioco
+    const onResume = (sys, data) => this.onMiniDone(data);
+    this.events.on('resume', onResume);
+    this.events.once('shutdown', () => this.events.off('resume', onResume));
 
     // HUD
     this.add.rectangle(W / 2, 12, W, 24, 0x1a1423, 0.6).setDepth(20);
@@ -61,6 +73,7 @@ export class Level extends Phaser.Scene {
 
     this.movePlayer(dt);
     this.tickEffects(dt);
+    this.updateShots(dt);
 
     // Comparsa oggetti
     this.spawnMs -= dt;
@@ -121,7 +134,7 @@ export class Level extends Phaser.Scene {
   }
 
   tickEffects(dt) {
-    const labels = { speed: 'TURBO', double: 'x2', invincible: 'INVINCIBILE', padel: 'PADEL', stuck: 'SUL DIVANO', crutches: 'STAMPELLE' };
+    const labels = { speed: 'TURBO', double: 'x2', invincible: 'INVINCIBILE', padel: 'PADEL', stuck: 'SUL DIVANO', crutches: 'STAMPELLE', ski: 'SCI-BLASTER' };
     const active = [];
     for (const k of Object.keys(this.effects)) {
       this.effects[k] -= dt;
@@ -188,7 +201,8 @@ export class Level extends Phaser.Scene {
       const f = it.friend; it.destroy();
       if (!this.friendsFound.includes(f)) this.friendsFound.push(f);
       this.addBonus(100); sfx.friend();
-      this.showFriendBanner(f);
+      if (FRIENDS[f].scene) this.startMini(f);
+      else this.showFriendBanner(f);
       return;
     }
 
@@ -238,6 +252,47 @@ export class Level extends Phaser.Scene {
     this.time.delayedCall(2200, () => {
       g.destroy(); this.frozen = false; this.physics.resume();
     });
+  }
+
+  // ---------- mini-giochi ----------
+  startMini(key) {
+    this.frozen = true; this.targetX = null; this.physics.pause();
+    this.time.delayedCall(250, () => {
+      this.scene.launch(FRIENDS[key].scene);
+      this.scene.pause();
+    });
+  }
+
+  onMiniDone(res) {
+    this.targetX = null;
+    // pulisce gli ostacoli vicini ad Aurelio per non farlo colpire appena torna
+    for (const it of [...this.items.getChildren()]) if (it.y > H / 2 && it.kind !== 'friend') it.destroy();
+    this.hurtMs = 1200;
+    this.physics.resume(); this.frozen = false;
+    if (!res) return;
+    if (res.win) {
+      const R = MONTAGNA.reward;
+      this.addBonus(R.points);
+      this.lives = Math.min(this.lives + R.life, this.hearts.length); this.refreshHearts();
+      this.effects.ski = R.skiMs;
+      sfx.boost();
+      this.floatText(this.player.x, this.player.y - 50, 'SCI-BLASTER!', '#bfe3f0');
+    } else {
+      this.effects.crutches = CRUTCHES.ms;
+      this.floatText(this.player.x, this.player.y - 50, CRUTCHES.label, '#ff9ecb');
+    }
+  }
+
+  updateShots(dt) {
+    if (this.effects.ski) {
+      this.shootMs -= dt;
+      if (this.shootMs <= 0) {
+        this.shootMs = 260;
+        const sh = this.shots.create(this.player.x, this.player.y - 30, 'sci1').setScale(2).setDepth(4);
+        sh.setVelocityY(-460); sh.setAngularVelocity(720); sfx.shoot();
+      }
+    }
+    for (const sh of [...this.shots.getChildren()]) if (sh.y < -30) sh.destroy();
   }
 
   // ---------- boss: Maggipinto ----------
