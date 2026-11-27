@@ -8,7 +8,8 @@ export const PALETTE = {
   "n": "#222222", "r": "#c0392b", "o": "#f08a24", "y": "#f4d03f", "B": "#2f4b7c", "m": "#8a2b2b",
   "l": "#a07e5c", "L": "#c8a682", "c": "#c8b49a", "K": "#151515", "R": "#d03050", "a": "#5a2a1c",
   "A": "#8a4430", "G": "#bfe3f0", "f": "#fff8e0", "p": "#7a1236", "v": "#3a8a3a", "x": "#8a8a96", "V": "#8bd650",
-  "q": "#6e6a66", "Q": "#9a948c", "z": "#e23b2e", "Z": "#ffd27a", "t": "#d9893a", "T": "#3f7d3a", "u": "#2f5e2c"
+  "q": "#6e6a66", "Q": "#9a948c", "z": "#e23b2e", "Z": "#ffd27a", "t": "#d9893a", "T": "#3f7d3a", "u": "#2f5e2c",
+  "C": "#d4142a", "D": "#7a0a18", "N": "#d9a520", "M": "#9a6a3a", "P": "#5e3a1c", "W": "#ffffff"
 };
 
 export const SPRITES = {
@@ -534,5 +535,133 @@ export const SPRITES = {
     ".rrrrr.",
     "..rrr..",
     "...r..."
+  ],
+  "camparino": [
+    "...KK...",
+    "...CC...",
+    "...CC...",
+    "..CfCC..",
+    "..CfCC..",
+    ".CCfCCC.",
+    ".CCfCCC.",
+    "CCCfCCCC",
+    "CCCfCCCC",
+    "CCCCCCCC",
+    "DDDDDDDD"
+  ],
+  "orologio": [
+    "...llll...",
+    "...llll...",
+    "..NNNNNN..",
+    ".NwwwwwwN.",
+    ".NwwkwwwNN",
+    ".NwwkkkwNN",
+    ".NwwwwwwN.",
+    "..NNNNNN..",
+    "...llll...",
+    "...llll..."
+  ],
+  "sigaro": [
+    "QaAAAAAAANNAAAA.",
+    "QAAAAAAAANNAAAAa",
+    "QaAAAAAAANNAAAA."
+  ],
+  "occhiali": [
+    "NNNNNNNNNNNNNNN",
+    "NKKKKKNNNKKKKKN",
+    "NKGKKKN.NKGKKKN",
+    ".KKKKK...KKKKK.",
+    "..KKK.....KKK.."
+  ],
+  "offerta": [
+    "..yyyyyyyyyyy",
+    ".yyyyyyyyyyyy",
+    "yyk.yrryyyryy",
+    "yyk.yrryyryyy",
+    "yyyyyyyyryyyy",
+    ".yyyyyyryyrry",
+    "..yyyyryyyrry"
+  ],
+  "portafoglio": [
+    ".PPPPPPPPPP.",
+    "PMMMMMMMMMMP",
+    "PMMMMMMMNNNP",
+    "PMMMMMMMNkNP",
+    "PMMMMMMMNNNP",
+    "PMMMMMMMMMMP",
+    ".PPPPPPPPPP."
+  ],
+  "salvagente": [
+    "..wwrr..",
+    ".ww..rr.",
+    "rr....ww",
+    "rr....ww",
+    ".rr..ww.",
+    "..rrww.."
+  ],
+  "antonio_ballo1": [
+    ".....hHhHhHhh.....",
+    "....hhHhhhhHhh....",
+    "....hhhhhhhhhh....",
+    "....ssssssssss....",
+    "...sskksssskkss...",
+    "...ssessssssess...",
+    "..ssssssSSssssss..",
+    "...sssssSSsssss...",
+    "....bssssssssb....",
+    "...bbbsmmmmsbbb...",
+    "...bbbbbbbbbbbb...",
+    "....bbbbbbbbbb....",
+    ".....bbbbbbbb.....",
+    ".....cccwwccc.....",
+    "...cccwwwwwwccc...",
+    "sscccccwwwwcccccss",
+    "....cccwwwwccc....",
+    "....cccwwwwccc....",
+    ".....jjjjjjjj.....",
+    ".....jjjj.jjjj....",
+    "....nnnn...nnnn..."
+  ],
+  "antonio_ballo2": [
+    ".s...hHhHhHhh...s.",
+    ".c..hhHhhhhHhh..c.",
+    ".c..hhhhhhhhhh..c.",
+    "....ssssssssss....",
+    "...sskksssskkss...",
+    "...ssessssssess...",
+    "..ssssssSSssssss..",
+    "...sssssSSsssss...",
+    "....bssssssssb....",
+    "...bbbsmmmmsbbb...",
+    "...bbbbbbbbbbbb...",
+    "....bbbbbbbbbb....",
+    ".....bbbbbbbb.....",
+    ".....cccwwccc.....",
+    "...cccwwwwwwccc...",
+    "..ccccwwwwwwcccc..",
+    ".cc.ccwwwwwwcc.cc.",
+    "..cscccwwwwcccsc..",
+    ".....jjjjjjjj.....",
+    "....jjjj..jjjj....",
+    "...nnnn....nnnn..."
+  ],
+  "aurelio_capitano": [
+    "....wwwwwwww....",
+    "..wwwwwNNwwwww..",
+    "..wwwwNNNNwwww..",
+    ".KKKKKKKKKKKKKK.",
+    ".hhssssssssssshh",
+    ".hsggggssggggsh.",
+    ".hsgeegssgeegsh.",
+    ".hsggggssggggsh.",
+    "..sssssSSsssss..",
+    "..bsssmmmmsssb..",
+    "..bbsmwwwwmsbb..",
+    "...bbbbbbbbbb...",
+    "....bbbbbbbb....",
+    "...wwwwsswwww...",
+    "..wwwwwwwwwwww..",
+    ".swwwwwwwwwwwws.",
+    ".swwwwwwwwwwwws."
   ]
 };

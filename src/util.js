@@ -116,8 +116,43 @@ export function makeTextures(scene) {
   tc.fillStyle = tg; tc.fillRect(0, TH - 100, W, 100);
   tenda.refresh();
 
+  // Mare (sfondo della barca di Antonio)
+  const sea = scene.textures.createCanvas('mare', W, 96);
+  const sc = sea.getContext();
+  sc.fillStyle = '#2b6ea8'; sc.fillRect(0, 0, W, 96);
+  for (let i = 0; i < 70; i++) {
+    sc.fillStyle = Math.random() < 0.6 ? '#3a82c0' : '#5c9fd6';
+    sc.fillRect(Math.floor(Math.random() * W), Math.floor(Math.random() * 96), Phaser.Math.Between(4, 10), 1);
+  }
+  sea.refresh();
+
+  // Onda: cresta di schiuma bianca su un'onda blu scuro (40x14)
+  const wave = scene.textures.createCanvas('onda', 40, 14);
+  const wc = wave.getContext();
+  wc.fillStyle = '#1a1423'; wc.beginPath(); wc.ellipse(20, 9, 20, 5, 0, 0, Math.PI * 2); wc.fill();
+  wc.fillStyle = '#1d4f80'; wc.beginPath(); wc.ellipse(20, 9, 19, 4, 0, 0, Math.PI * 2); wc.fill();
+  wc.fillStyle = '#ffffff';
+  for (let x = 2; x < 38; x += 6) { wc.beginPath(); wc.arc(x + 2, 6, 3, 0, Math.PI * 2); wc.fill(); }
+  wc.fillStyle = '#bfe3f0'; wc.fillRect(3, 9, 34, 1);
+  wave.refresh();
+
+  // Barca vista dall'alto, prua verso l'alto (26x52)
+  const boat = scene.textures.createCanvas('barca', 26, 52);
+  const bc = boat.getContext();
+  const hull = (r, col) => {
+    bc.fillStyle = col; bc.beginPath();
+    bc.moveTo(13, 1 + (13 - r) * 1.2); bc.quadraticCurveTo(13 + r, 12, 13 + r, 30);
+    bc.lineTo(13 + r - 1, 51 - (13 - r)); bc.lineTo(13 - r + 1, 51 - (13 - r)); bc.lineTo(13 - r, 30);
+    bc.quadraticCurveTo(13 - r, 12, 13, 1 + (13 - r) * 1.2); bc.fill();
+  };
+  hull(13, '#1a1423'); hull(12, '#f4f1ea'); hull(10, '#9a6a3a');
+  bc.fillStyle = '#5e3a1c';
+  for (let y = 14; y < 49; y += 5) bc.fillRect(4, y, 18, 1); // assi del ponte
+  bc.fillStyle = '#c0392b'; bc.fillRect(3, 26, 20, 2);       // riga rossa sullo scafo
+  boat.refresh();
+
   // Particella
-  const p = scene.textures.createCanvas('spark', 2, 2);
+  const p =scene.textures.createCanvas('spark', 2, 2);
   p.getContext().fillStyle = '#ffffff'; p.getContext().fillRect(0, 0, 2, 2); p.refresh();
 }
 

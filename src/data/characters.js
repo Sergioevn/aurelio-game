@@ -6,14 +6,16 @@ export const FRIENDS = {
                endLine: '¡A LA CAMA A LAS 21:00,\nQUE MAÑANA SE ESQUÍA\nOTRA VEZ!' },
   francesco: { name: 'FRANCESCO', game: 'LA SERATA',    line: 'Un\'altra birra?' },
   sergio:    { name: 'SERGIO',    game: 'CALISTHENICS', line: 'Solo 3 serie, giuro' },
-  antonio:   { name: 'ANTONIO',   game: 'IL PORTAFOGLIO', line: 'Guarda che affare!' },
+  antonio:   { name: 'ANTONIO',   game: 'IL PORTAFOGLIO', line: 'GUARDA CHE AFFARE!', scene: 'MiniPortafoglio',
+               winLine: 'CAMPARINO?', loseLine: 'SGRADEVOLE' },
   lollo:     { name: 'LOLLO',     game: 'LA NEBBIA',    line: 'SÀ', scene: 'MiniNebbia',
                winLine: 'SAI CHE HO SMESSO\nDI FUMARE?', loseLine: 'LA SIGA SOCIALE\nNON CONTA' }
 };
 
 // Booster: kind -> effetto applicato in Level.applyEffect
 export const BOOSTERS = {
-  spritz:    { label: 'SPRITZ! TURBO',        effect: 'speed',      ms: 6000 },
+  spritz:    { label: 'SPRITZ! TURBO',        effect: 'speed',      ms: 6000,
+               camparino: 'CAMPARINO! TURBO' },  // battuto Antonio, gli spritz diventano camparini per sempre
   birra:     { label: 'BIRRA! PUNTI x2',      effect: 'double',     ms: 8000 },
   vino:      { label: 'NEBBIOLO! INVINCIBILE', effect: 'invincible', ms: 5000 },
   racchetta: { label: 'PADEL MODE!',          effect: 'padel',      ms: 8000 }
@@ -91,7 +93,33 @@ export const NEBBIA = {
   phoneSlide: [70, 120], // il telefono che vibra scivola di lato (px/s)
   ringMs: 700,           // lo squillo avvisa poco prima che il telefono compaia
   // Lollo insulta il ladro (censurato, stile fumetto)
-  insults: ['LADRO DI #@!%&!', 'TORNA QUI, $%&#@!', 'TI TROVO, BRUTTO ****!', 'MALEDETTO @#$%!', '%&#@ DI UN LADRO!'],
+  insults: ['LADRO DI #@!%&!', 'TORNA QUI, $%&#@!', 'TI TROVO, BRUTTO ****!', 'MALEDETTO @#$%!', '%&#@ DI UN LADRO!',
+            'CHE COINCIDENZA', 'DI CHE COLORE ERA?'],
   reward: { points: 300, fanMs: 8000 },   // se vince: ventilatore che soffia via pizze, rocce, asini e inviti
   fogMs: 8000                              // se perde: nebbia nel livello
+};
+
+// Mini-gioco Portafoglio (Antonio): fase 1 shopping, fase 2 in barca
+export const PORTAFOGLIO = {
+  shopMs: 20000,          // durata fase 1
+  soldi: 400,             // soldi iniziali di Antonio (euro)
+  // cavolate che cadono: prezzo e velocità di caduta
+  cavolate: {
+    orologio: { prezzo: 150, vel: 105, label: 'OROLOGIO!' },
+    sigaro:   { prezzo: 60,  vel: 115, label: 'SIGARO!' },
+    occhiali: { prezzo: 90,  vel: 110, label: 'OCCHIALI!' },
+    offerta:  { prezzo: 200, vel: 170, label: 'OFFERTA LAMPO!' }   // rara e veloce
+  },
+  pesi: { orologio: 3, sigaro: 4, occhiali: 3, offerta: 1 },
+  spawnEvery: [550, 800], // ogni quanto cade una cavolata (ms)
+  antonioSpeed: 145,      // Antonio corre verso le cavolate (Aurelio va a 230)
+  saveLines: ['SGRADEVOLE!', 'AVVOCATO', 'LORDI', 'MI CONSENTA'],  // quando Aurelio gliela soffia
+  barcaMs: 16000,         // durata fase 2
+  maxOnde: 3,             // onde prese prima di affondare
+  ondaEvery: 1150,        // ogni quanto arriva una fila di onde (ms)
+  gapStart: 92, gapEnd: 72,      // varco tra le onde (px), si stringe
+  seaStart: 120, seaEnd: 165,    // velocità del mare (px/s)
+  balloLines: ['STO DA DIO!!', 'HY HAA!'],
+  reward: { points: 300 },       // vinto: +300 e camparini al posto degli spritz per sempre
+  losePoints: 150                // perso: Aurelio paga il conto (-150 punti)
 };

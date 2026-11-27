@@ -27,6 +27,7 @@ export class Menu extends Phaser.Scene {
     this.tweens.add({ targets: play, alpha: 0.2, duration: 500, yoyo: true, repeat: -1 });
 
     txt(this, W / 2, 360, 'RECORD: ' + save.get('best', 0), 8, '#bfe3f0');
+    if (save.get('camparino', false)) this.add.image(W / 2 + 84, 358, 'camparino').setScale(1.5); // premio di Antonio
 
     // Audio on/off
     const audio = txt(this, W / 2, 392, 'AUDIO: ' + (sfx.muted ? 'NO' : 'SI'), 8, '#c8b49a')
@@ -49,6 +50,8 @@ export class Menu extends Phaser.Scene {
     const mini = new URLSearchParams(location.search).get('mini');
     if (mini === 'montagna') { this.scene.start('MiniMontagna', { standalone: true }); return; }
     if (mini === 'nebbia') { this.scene.start('MiniNebbia', { standalone: true }); return; }
+    if (mini === 'portafoglio') { this.scene.start('MiniPortafoglio', { standalone: true }); return; }
+    if (mini === 'barca') { this.scene.start('MiniPortafoglio', { standalone: true, barca: true }); return; }
     this.scene.start('Level');
   }
 

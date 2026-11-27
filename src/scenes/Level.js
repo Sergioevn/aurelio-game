@@ -1,6 +1,6 @@
-import { W, H, txt, PLAYER_Y, FOG_R } from '../util.js';
+import { W, H, txt, PLAYER_Y, FOG_R, save } from '../util.js';
 import { sfx } from '../sfx.js';
-import { FRIENDS, BOOSTERS, OBSTACLES, CRUTCHES, DONKEY, LEVEL, SPAWN_WEIGHTS, BOSS, MONTAGNA, NEBBIA } from '../data/characters.js';
+import { FRIENDS, BOOSTERS, OBSTACLES, CRUTCHES, DONKEY, LEVEL, SPAWN_WEIGHTS, BOSS, MONTAGNA, NEBBIA, PORTAFOGLIO } from '../data/characters.js';
 
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
@@ -13,6 +13,7 @@ export class Level extends Phaser.Scene {
     this.friendsFound = []; this.beaten = []; this.nextFriendAt = 9000;
     this.boss = null; this.nextBossAt = BOSS.firstAt;
     this.frozen = false; this.ended = false;
+    this.camparino = save.get('camparino', false); // battuto Antonio una volta: spritz -> camparini per sempre
 
     this.bg = this.add.tileSprite(W / 2, H / 2, W, H, 'road');
     this.items = this.physics.add.group();
@@ -191,7 +192,8 @@ export class Level extends Phaser.Scene {
     let r = Math.random() * entries.reduce((s, [, w]) => s + w, 0);
     let kind = entries[0][0];
     for (const [k, w] of entries) { if ((r -= w) < 0) { kind = k; break; } }
-    const it = this.items.create(Phaser.Math.Between(40, W - 40), -20, kind).setScale(kind === 'asino' ? 2.5 : 2);
+    const tex = kind === 'spritz' && this.camparino ? 'camparino' : kind;
+    const it = this.items.create(Phaser.Math.Between(40, W - 40), -20, tex).setScale(kind === 'asino' ? 2.5 : 2);
     it.kind = kind; it.seed = Math.random() * 1000;
     it.setVelocityY(fall * Phaser.Math.FloatBetween(0.9, 1.1));
     if (kind === 'pizza') it.body.setSize(12, 12).setOffset(1, 9); // la puzza non conta come ostacolo
@@ -242,7 +244,7 @@ export class Level extends Phaser.Scene {
       this.effects[b.effect] = b.ms;
       if (b.effect === 'padel' || b.effect === 'invincible') delete this.effects.stuck;
       this.addBonus(15); sfx.boost();
-      this.floatText(it.x, it.y, b.label, '#f4d03f');
+      this.floatText(it.x, it.y, k === 'spritz' && this.camparino ? b.camparino : b.label, '#f4d03f');
       it.destroy();
       return;
     }
@@ -341,6 +343,16 @@ export class Level extends Phaser.Scene {
       } else {
         this.effects.fog = NEBBIA.fogMs;
         this.floatText(p.x, p.y - 50, 'CHE NEBBIA...', '#c8b49a');
+      }
+    } else if (res.mini === 'antonio') {
+      if (res.win) {
+        this.addBonus(PORTAFOGLIO.reward.points);
+        this.camparino = true; save.set('camparino', true);
+        for (const it of this.items.getChildren()) if (it.kind === 'spritz') it.setTexture('camparino');
+        this.floatText(p.x, p.y - 50, 'CAMPARINO?', '#ff6b5b');
+      } else {
+        this.bonus -= Math.min(PORTAFOGLIO.losePoints, this.score());
+        this.floatText(p.x, p.y - 50, 'SGRADEVOLE: -' + PORTAFOGLIO.losePoints, '#ff6b5b');
       }
     }
     if (res.win) { sfx.boost(); this.markBeaten(res.mini); }
