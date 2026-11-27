@@ -496,7 +496,7 @@ export const SPRITES = {
     "...xxxxxx..."
   ],
   "sigaretta": [
-    "wwwwwwor"
+    "LLwwwwwoR"
   ],
   "ventilatore": [
     "...xxxxxxxx...",
@@ -512,6 +512,20 @@ export const SPRITES = {
     "......xx......",
     "......xx......",
     "....xxxxxx...."
+  ],
+  "siga_accesa": [
+    "...........x...",
+    "............x..",
+    "...........x...",
+    "LLLwwwwwwwwwoR.",
+    "LLLwwwwwwwwwRy."
+  ],
+  "siga_accesa_b": [
+    "............x..",
+    "...........x...",
+    "............x..",
+    "LLLwwwwwwwwwRo.",
+    "LLLwwwwwwwwwoR."
   ],
   "cuore": [
     ".rr.rr.",

@@ -81,12 +81,17 @@ export const MONTAGNA = {
 // Mini-gioco Nebbia (Lollo): un ladro ruba il telefono ad Aurelio nel fumo
 export const NEBBIA = {
   durataMs: 30000,       // tempo per ritrovare il ladro
-  luce: 62,              // raggio di visibilità attorno ad Aurelio (px)
+  luce: 54,              // raggio di visibilità attorno ad Aurelio (px)
   luceSiga: 36,          // raggio quando ti prende un anello di fumo
   sigaMs: 3000,
   ventoEvery: 7000,      // ogni quanto una folata dirada il fumo
-  ladroSpeed: 190,       // velocità del ladro quando passa vicino ad Aurelio
   stealLine: '¡MI MÓVIL!',
+  phoneMs: 1600,         // quanto resta visibile il telefono quando ricompare
+  grabsToWin: 3,         // il telefono scivola di mano: va preso 3 volte
+  phoneSlide: [70, 120], // il telefono che vibra scivola di lato (px/s)
+  ringMs: 700,           // lo squillo avvisa poco prima che il telefono compaia
+  // Lollo insulta il ladro (censurato, stile fumetto)
+  insults: ['LADRO DI #@!%&!', 'TORNA QUI, $%&#@!', 'TI TROVO, BRUTTO ****!', 'MALEDETTO @#$%!', '%&#@ DI UN LADRO!'],
   reward: { points: 300, fanMs: 8000 },   // se vince: ventilatore che soffia via pizze, rocce, asini e inviti
   fogMs: 8000                              // se perde: nebbia nel livello
 };

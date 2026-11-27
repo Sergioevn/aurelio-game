@@ -106,6 +106,16 @@ export function makeTextures(scene) {
   fc.globalCompositeOperation = 'source-over';
   fog.refresh();
 
+  // Tenda di fumo: scende da Lollo all'inizio del mini-gioco (bordo inferiore sfumato)
+  const TH = H + 100;
+  const tenda = scene.textures.createCanvas('nebbia_tenda', W, TH);
+  const tc = tenda.getContext();
+  const tg = tc.createLinearGradient(0, TH - 100, 0, TH);
+  tg.addColorStop(0, 'rgba(138,140,148,1)'); tg.addColorStop(1, 'rgba(138,140,148,0)');
+  tc.fillStyle = '#8a8c94'; tc.fillRect(0, 0, W, TH - 100);
+  tc.fillStyle = tg; tc.fillRect(0, TH - 100, W, 100);
+  tenda.refresh();
+
   // Particella
   const p = scene.textures.createCanvas('spark', 2, 2);
   p.getContext().fillStyle = '#ffffff'; p.getContext().fillRect(0, 0, 2, 2); p.refresh();
