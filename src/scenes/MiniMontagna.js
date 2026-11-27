@@ -12,7 +12,9 @@ export class MiniMontagna extends Phaser.Scene {
 
   create() {
     this.phase = 'intro'; this.elapsed = 0; this.crashes = 0; this.stunMs = 0;
+    this.dist = 0; this.gates = 0; this.streak = 0; this.invMs = 0; this.gateList = [];
     this.bg = this.add.tileSprite(W / 2, H / 2, W, H, 'snow');
+    this.nets = this.add.graphics().setDepth(1);
     this.items = this.physics.add.group();
     this.decor = this.add.group();
 
@@ -34,6 +36,9 @@ export class MiniMontagna extends Phaser.Scene {
     this.title = txt(this, 8, 12, 'LA PISTA', 8, '#f4d03f', 0).setOrigin(0, 0.5).setDepth(21);
     this.info = txt(this, W - 8, 12, '', 7, '#ffffff', 0).setOrigin(1, 0.5).setDepth(21);
     this.timeBar = this.add.rectangle(0, 25, W, 3, 0xf08a24).setOrigin(0, 0.5).setDepth(21);
+    this.gateText = txt(this, 8, 38, '', 7, '#3a8a3a', 0).setOrigin(0, 0.5).setDepth(21).setStroke('#ffffff', 3);
+    this.gateDots = [];
+    for (let i = 0; i < M.gatesForBoost; i++) this.gateDots.push(this.add.rectangle(90 + i * 11, 38, 7, 7, 0xffffff).setStrokeStyle(2, 0x1a1423).setDepth(21));
 
     this.intro();
   }
@@ -46,7 +51,7 @@ export class MiniMontagna extends Phaser.Scene {
     g.add(this.add.image(W / 2, H / 2 - 62, 'javier').setScale(4));
     g.add(txt(this, W / 2, H / 2 - 2, f.name, 14, '#f4d03f'));
     g.add(txt(this, W / 2, H / 2 + 24, '"' + f.line + '"', 8, '#ffffff'));
-    g.add(txt(this, W / 2, H / 2 + 52, 'EVITA I PALI\nE GLI SCIATORI', 7, '#bfe3f0'));
+    g.add(txt(this, W / 2, H / 2 + 52, 'PASSA TRA I PALI\nEVITA GLI SCIATORI', 7, '#bfe3f0'));
     const go = txt(this, W / 2, H / 2 + 86, 'TOCCA PER PARTIRE', 7, '#f08a24');
     g.add(go);
     this.tweens.add({ targets: go, alpha: 0.2, duration: 450, yoyo: true, repeat: -1 });
@@ -72,21 +77,44 @@ export class MiniMontagna extends Phaser.Scene {
   }
 
   // ---------- FASE 1: la pista ----------
+  // La pista è delimitata da reti arancioni che si stringono e curvano.
+  corridor(d) {
+    const prog = Phaser.Math.Clamp(this.elapsed / M.pistaMs, 0, 1);
+    const half = M.pistaHalfStart - (M.pistaHalfStart - M.pistaHalfEnd) * prog;
+    let c = W / 2 + Math.sin(d / 240) * (25 + 25 * prog) + Math.sin(d / 97) * 8;
+    c = Phaser.Math.Clamp(c, half + 8, W - half - 8);
+    return { l: c - half, r: c + half };
+  }
+
+  drawNets() {
+    const g = this.nets; g.clear();
+    for (let y = -6; y < H; y += 6) {
+      const d = this.dist + (H - y);
+      const { l, r } = this.corridor(d);
+      g.fillStyle(0xd6dfeb, 1); g.fillRect(0, y, l, 6); g.fillRect(r, y, W - r, 6); // fuori pista
+      if (Math.floor(d / 6) % 2) { g.fillStyle(0xf08a24, 1); g.fillRect(l - 2, y, 3, 6); g.fillRect(r - 1, y, 3, 6); }
+      else { g.fillStyle(0x1a1423, 1); g.fillRect(l - 1, y, 1, 6); g.fillRect(r, y, 1, 6); }
+    }
+  }
+
   updatePista(dt) {
     this.elapsed += dt;
-    const speed = 140 + this.elapsed / 1000 * 3;
+    const speed = 150 + this.elapsed / 1000 * 4;
     const stunned = this.stunMs > 0;
     const scroll = (stunned ? speed * 0.25 : speed) * dt / 1000;
+    this.dist += scroll;
     this.bg.tilePositionY -= scroll;
+    this.drawNets();
     for (const d of this.decor.getChildren()) { d.y += scroll; if (d.y > H + 30) d.destroy(); }
     for (const it of [...this.items.getChildren()]) {
-      it.y += scroll * (it.kind === 'sciatore' ? 1.6 : 1);
-      if (it.kind === 'sciatore') it.x = it.baseX + Math.sin((this.elapsed + it.seed) / 380) * 30;
+      it.y += scroll * (it.kind === 'sciatore' ? it.fast : 1);
+      if (it.kind === 'sciatore' && !it.hitDone) it.x = it.baseX + Math.sin((this.elapsed + it.seed) / 330) * it.amp;
       if (it.y > H + 40) it.destroy();
     }
 
-    // Movimento di Aurelio
+    // Movimento di Aurelio (non può uscire dalle reti)
     const p = this.player;
+    const lane = this.corridor(this.dist + (H - p.y));
     if (stunned) {
       this.stunMs -= dt;
       this.stars.setVisible(true).setPosition(p.x, p.y - 26);
@@ -97,54 +125,99 @@ export class MiniMontagna extends Phaser.Scene {
       p.setAngle(Math.sin(this.elapsed / 60) * 8);
     } else {
       this.stars.setVisible(false); p.setAngle(0);
-      const step = 230 * dt / 1000;
+      const step = 240 * dt / 1000;
       if (this.keys?.left.isDown) p.x -= step;
       else if (this.keys?.right.isDown) p.x += step;
       else if (this.targetX !== null) { const dx = this.targetX - p.x; p.x += Math.sign(dx) * Math.min(Math.abs(dx), step); }
-      p.x = Phaser.Math.Clamp(p.x, 22, W - 22);
       p.y = H - 70 + Math.abs(Math.sin(this.elapsed / 120)) * 2; // passo da risalita
     }
+    p.x = Phaser.Math.Clamp(p.x, lane.l + 12, lane.r - 12);
     this.skis.setPosition(p.x, H - 46).setAngle(p.angle);
+
+    // Vin brulé: invincibile
+    if (this.invMs > 0) {
+      this.invMs -= dt;
+      p.setTint(Math.floor(this.elapsed / 90) % 2 ? 0xffe066 : 0xffffff);
+      if (this.invMs <= 0) p.clearTint();
+    }
+
+    this.checkGates();
 
     // Comparsa ostacoli e decorazioni
     this.spawnMs -= dt;
     if (this.spawnMs <= 0 && this.elapsed < M.pistaMs - 1500) {
-      if (Math.random() < 0.62) this.spawnGate(); else this.spawnSkier();
-      this.spawnMs = Math.max(650, 1150 - this.elapsed / 1000 * 22);
+      if (Math.random() < 0.55) this.spawnGate();
+      else { this.spawnSkier(0); if (Math.random() < 0.2 + this.elapsed / M.pistaMs * 0.3) this.spawnSkier(-70); }
+      this.spawnMs = Math.max(600, 1050 - this.elapsed / 1000 * 22);
     }
-    if (Math.random() < dt / 700) {
-      const x = Math.random() < 0.5 ? Phaser.Math.Between(6, 18) : Phaser.Math.Between(W - 18, W - 6);
-      this.decor.add(this.add.image(x, -30, 'abete').setScale(2).setDepth(2));
+    if (Math.random() < dt / 450) {
+      const { l, r } = this.corridor(this.dist + H + 30);
+      const side = Math.random() < 0.5;
+      if (side && l > 22) this.decor.add(this.add.image(Phaser.Math.Between(8, l - 12), -30, 'abete').setScale(2).setDepth(2));
+      if (!side && W - r > 22) this.decor.add(this.add.image(Phaser.Math.Between(r + 12, W - 8), -30, 'abete').setScale(2).setDepth(2));
     }
 
     this.info.setText('SCHIANTI ' + this.crashes + '/' + M.maxCrash);
+    this.gateText.setText('PORTE ' + this.gates);
+    const lit = this.invMs > 0 ? M.gatesForBoost : this.streak % M.gatesForBoost;
+    this.gateDots.forEach((d, i) => d.setFillStyle(i < lit ? 0xf4d03f : 0xffffff));
     this.timeBar.width = W * Math.max(0, 1 - this.elapsed / M.pistaMs);
-    if (this.elapsed >= M.pistaMs) this.startSeggiovia();
+    if (this.elapsed >= M.pistaMs) { this.player.clearTint(); this.invMs = 0; this.startSeggiovia(); }
   }
 
   spawnGate() {
-    const gap = Math.max(64, 92 - this.elapsed / 1000 * 1.4);
-    const cx = Phaser.Math.Between(40 + gap / 2, W - 40 - gap / 2);
+    const { l, r } = this.corridor(this.dist + H + 30);
+    const gap = Math.max(M.gateGapEnd, M.gateGapStart - this.elapsed / M.pistaMs * (M.gateGapStart - M.gateGapEnd));
+    const cx = Phaser.Math.Between(Math.ceil(l + gap / 2 + 8), Math.floor(Math.max(l + gap / 2 + 8, r - gap / 2 - 8)));
+    const gate = { poles: [], done: false };
     for (const x of [cx - gap / 2, cx + gap / 2]) {
       const it = this.items.create(x, -30, 'palo').setScale(2).setDepth(3);
-      it.kind = 'palo'; it.body.setSize(3, 8).setOffset(1, 7);
+      it.kind = 'palo'; it.body.setSize(3, 8).setOffset(1, 7); it.gate = gate;
+      gate.poles.push(it);
     }
-    // a volte un palo isolato sul bordo per chiudere la strada
-    if (Math.random() < 0.4) {
-      const x = cx < W / 2 ? Phaser.Math.Between(cx + gap / 2 + 40, W - 25) : Phaser.Math.Between(25, cx - gap / 2 - 40);
-      if (x > 20 && x < W - 20) { const it = this.items.create(x, -60, 'palo').setScale(2).setDepth(3); it.kind = 'palo'; it.body.setSize(3, 8).setOffset(1, 7); }
-    }
+    this.gateList.push(gate);
   }
 
-  spawnSkier() {
-    const it = this.items.create(0, -30, 'sciatore').setScale(2).setDepth(3);
-    it.kind = 'sciatore'; it.baseX = Phaser.Math.Between(50, W - 50); it.seed = Math.random() * 3000;
+  spawnSkier(dy) {
+    const { l, r } = this.corridor(this.dist + H + 30 - dy);
+    const it = this.items.create(0, -30 + dy, 'sciatore').setScale(2).setDepth(3);
+    it.kind = 'sciatore'; it.seed = Math.random() * 3000;
+    it.amp = Math.min(35, (r - l) / 2 - 16);
+    it.baseX = Phaser.Math.Between(Math.ceil(l + 16 + it.amp), Math.floor(Math.max(l + 16 + it.amp, r - 16 - it.amp)));
+    it.fast = Phaser.Math.FloatBetween(1.7, 2.1);
     it.x = it.baseX; it.body.setSize(8, 10).setOffset(3, 4);
   }
 
+  // Passare in mezzo a due pali = porta. Ogni N porte di fila: vin brulé (invincibile).
+  checkGates() {
+    const p = this.player;
+    for (const g of this.gateList) {
+      if (g.done) continue;
+      const [a, b] = g.poles;
+      if (!a.active || !b.active) { g.done = true; continue; }
+      if (a.y < p.y - 4) continue;
+      g.done = true;
+      if (a.body.enable && b.body.enable && p.x > a.x && p.x < b.x) {
+        this.gates++; this.streak++; sfx.pick();
+        this.floatText(p.x, p.y - 40, 'PORTA! +' + M.gatePoints, '#3a8a3a');
+        if (this.streak % M.gatesForBoost === 0) {
+          this.invMs = M.boostMs; sfx.boost();
+          this.time.delayedCall(250, () => this.floatText(p.x, p.y - 60, 'VIN BRULÉ!\nINVINCIBILE', '#f4d03f'));
+        }
+      } else if (this.invMs <= 0) this.streak = 0;
+    }
+    this.gateList = this.gateList.filter(g => !g.done);
+  }
+
   onHit(it) {
-    if (this.phase !== 'pista' || this.stunMs > 0 || !it.active) return;
-    this.crashes++;
+    if (this.phase !== 'pista' || this.stunMs > 0 || !it.active || !it.body.enable) return;
+    if (this.invMs > 0) { // con il vin brulé si travolge tutto
+      it.body.enable = false; sfx.smash();
+      this.floatText(it.x, it.y - 20, 'OLÉ!', '#ffffff');
+      this.tweens.add({ targets: it, angle: it.x < this.player.x ? -540 : 540, x: it.x + (it.x < this.player.x ? -80 : 80), alpha: 0, duration: 500, onComplete: () => it.destroy() });
+      return;
+    }
+    this.crashes++; this.streak = 0;
     this.cameras.main.shake(180, 0.012); sfx.hit();
     if (it.kind === 'palo') {
       this.stunMs = M.stunPalo;
@@ -152,7 +225,7 @@ export class MiniMontagna extends Phaser.Scene {
       this.tweens.add({ targets: it, angle: it.x < this.player.x ? -70 : 70, duration: 200 }); // il palo si piega
       it.body.enable = false;
     } else {
-      this.stunMs = M.stunSciatore;
+      this.stunMs = M.stunSciatore; it.hitDone = true;
       this.floatText(this.player.x, this.player.y - 46, 'SCONTRO!', '#ff6b5b');
       it.body.enable = false;
       this.tweens.add({ targets: it, angle: 360, alpha: 0, duration: 500, onComplete: () => it.destroy() });
@@ -174,7 +247,7 @@ export class MiniMontagna extends Phaser.Scene {
   }
 
   setupSeggiovia() {
-    this.decor.clear(true, true);
+    this.decor.clear(true, true); this.nets.clear(); this.gateText.setVisible(false); this.gateDots.forEach(d => d.setVisible(false));
     this.player.setVisible(false); this.skis.setVisible(false);
     this.player.body.enable = false;
     this.title.setText('LA SEGGIOVIA');
@@ -302,7 +375,7 @@ export class MiniMontagna extends Phaser.Scene {
     g.add(this.add.rectangle(W / 2, H / 2, W - 30, 220, 0x1a1423, 0.95).setStrokeStyle(3, win ? 0x3a8a3a : 0xc0392b));
     if (win) {
       g.add(txt(this, W / 2, H / 2 - 74, 'IN CIMA!', 16, '#f4d03f'));
-      g.add(txt(this, W / 2, H / 2 - 30, '+' + R.points + ' PUNTI\n+' + R.life + ' VITA', 9, '#ffffff'));
+      g.add(txt(this, W / 2, H / 2 - 30, '+' + (R.points + this.gates * M.gatePoints) + ' PUNTI\n+' + R.life + ' VITA', 9, '#ffffff'));
       g.add(txt(this, W / 2, H / 2 + 14, 'SCI-BLASTER!', 10, '#bfe3f0'));
       g.add(txt(this, W / 2, H / 2 + 38, 'SPARA GLI SCI CONTRO\nPIZZE E ROCCE', 7, '#bfe3f0'));
     } else {
@@ -322,7 +395,7 @@ export class MiniMontagna extends Phaser.Scene {
 
   leave() {
     this.phase = 'left';
-    const res = { mini: 'javier', win: this.win };
+    const res = { mini: 'javier', win: this.win, bonus: this.gates * M.gatePoints };
     if (this.standalone) { this.scene.start('Menu'); return; }
     this.scene.stop();
     this.scene.resume('Level', res);

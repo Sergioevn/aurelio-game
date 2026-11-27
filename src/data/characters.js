@@ -49,6 +49,13 @@ export const BOSS = {
 export const MONTAGNA = {
   pistaMs: 20000,        // durata fase 1 (pista)
   maxCrash: 3,           // schianti prima di perdere
+  pistaHalfStart: 95,    // mezza larghezza della pista all'inizio (px)
+  pistaHalfEnd: 62,      // ...e alla fine: le reti si stringono
+  gateGapStart: 62,      // spazio tra i due pali di una porta
+  gateGapEnd: 48,
+  gatePoints: 20,        // punti per ogni porta (si sommano al premio se vince)
+  gatesForBoost: 3,      // porte di fila per il vin brulé
+  boostMs: 4000,         // durata vin brulé (invincibile)
   stunPalo: 1500,        // ms stordito dopo un palo
   stunSciatore: 900,
   seggioviaMs: 15000,    // durata fase 2 (seggiovia)

@@ -272,7 +272,7 @@ export class Level extends Phaser.Scene {
     if (!res) return;
     if (res.win) {
       const R = MONTAGNA.reward;
-      this.addBonus(R.points);
+      this.addBonus(R.points + (res.bonus || 0));
       this.lives = Math.min(this.lives + R.life, this.hearts.length); this.refreshHearts();
       this.effects.ski = R.skiMs;
       sfx.boost();
