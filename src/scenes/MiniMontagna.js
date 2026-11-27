@@ -12,14 +12,14 @@ export class MiniMontagna extends Phaser.Scene {
 
   create() {
     this.phase = 'intro'; this.elapsed = 0; this.crashes = 0; this.stunMs = 0;
-    this.dist = 0; this.gates = 0; this.streak = 0; this.invMs = 0; this.gateList = [];
+    this.dist = 0; this.gates = 0; this.streak = 0; this.invMs = 0; this.gateList = []; this.allGates = []; this.lastGateX = null;
     this.bg = this.add.tileSprite(W / 2, H / 2, W, H, 'snow');
     this.nets = this.add.graphics().setDepth(1);
     this.items = this.physics.add.group();
     this.decor = this.add.group();
 
     this.player = this.physics.add.sprite(W / 2, PLAYER_Y, 'aurelio').setScale(2).setDepth(5);
-    this.player.body.setSize(10, 14).setOffset(4, 12);
+    this.player.body.setSize(8, 12).setOffset(5, 13);
     this.skis = this.add.image(W / 2, PLAYER_Y + 24, 'sci_coppia').setScale(2).setDepth(4);
     this.stars = this.add.container(0, 0).setDepth(7).setVisible(false);
     for (let i = 0; i < 3; i++) this.stars.add(this.add.image(0, 0, 'stella').setScale(1.5));
@@ -109,7 +109,17 @@ export class MiniMontagna extends Phaser.Scene {
     for (const d of this.decor.getChildren()) { d.y += scroll; if (d.y > H + 30) d.destroy(); }
     for (const it of [...this.items.getChildren()]) {
       it.y += scroll * (it.kind === 'sciatore' ? it.fast : 1);
-      if (it.kind === 'sciatore' && !it.hitDone) it.x = it.baseX + Math.sin((this.elapsed + it.seed) / 330) * it.amp;
+      if (it.kind === 'sciatore' && !it.hitDone) {
+        // gli sciatori girano attorno alle porte: il varco resta sempre libero
+        let x = it.baseX + Math.sin((this.elapsed + it.seed) / 330) * it.amp;
+        for (const g of this.allGates) {
+          const [a, b] = g.poles;
+          if (Math.abs(it.y - a.y) > 50) continue;
+          const lo = a.x - 18, hi = b.x + 18;
+          if (x > lo && x < hi) x = (x - lo < hi - x) ? lo : hi;
+        }
+        it.x += (x - it.x) * Math.min(1, dt / 60);
+      }
       if (it.y > H + 40) it.destroy();
     }
 
@@ -142,14 +152,15 @@ export class MiniMontagna extends Phaser.Scene {
       if (this.invMs <= 0) p.clearTint();
     }
 
+    this.allGates = this.allGates.filter(g => g.poles[0].active && g.poles[1].active);
     this.checkGates();
 
     // Comparsa ostacoli e decorazioni
     this.spawnMs -= dt;
     if (this.spawnMs <= 0 && this.elapsed < M.pistaMs - 1500) {
       if (Math.random() < 0.55) this.spawnGate();
-      else { this.spawnSkier(0); if (Math.random() < 0.2 + this.elapsed / M.pistaMs * 0.3) this.spawnSkier(-70); }
-      this.spawnMs = Math.max(600, 1050 - this.elapsed / 1000 * 22);
+      else { this.spawnSkier(0); if (Math.random() < 0.1 + this.elapsed / M.pistaMs * 0.2) this.spawnSkier(-70); }
+      this.spawnMs = Math.max(680, 1100 - this.elapsed / 1000 * 20);
     }
     if (Math.random() < dt / 450) {
       const { l, r } = this.corridor(this.dist + H + 30);
@@ -169,14 +180,18 @@ export class MiniMontagna extends Phaser.Scene {
   spawnGate() {
     const { l, r } = this.corridor(this.dist + H + 30);
     const gap = Math.max(M.gateGapEnd, M.gateGapStart - this.elapsed / M.pistaMs * (M.gateGapStart - M.gateGapEnd));
-    const cx = Phaser.Math.Between(Math.ceil(l + gap / 2 + 8), Math.floor(Math.max(l + gap / 2 + 8, r - gap / 2 - 8)));
+    // slalom regolare: la porta nuova non è mai troppo lontana di lato dalla precedente
+    const lo = Math.ceil(l + gap / 2 + 8), hi = Math.floor(Math.max(lo, r - gap / 2 - 8));
+    const last = this.lastGateX ?? (lo + hi) / 2;
+    const cx = Phaser.Math.Clamp(Phaser.Math.Between(Math.round(last - 70), Math.round(last + 70)), lo, hi);
+    this.lastGateX = cx;
     const gate = { poles: [], done: false };
     for (const x of [cx - gap / 2, cx + gap / 2]) {
       const it = this.items.create(x, -30, 'palo').setScale(2).setDepth(3);
-      it.kind = 'palo'; it.body.setSize(3, 8).setOffset(1, 7); it.gate = gate;
+      it.kind = 'palo'; it.body.setSize(2, 6).setOffset(1.5, 8); it.gate = gate;
       gate.poles.push(it);
     }
-    this.gateList.push(gate);
+    this.gateList.push(gate); this.allGates.push(gate);
   }
 
   spawnSkier(dy) {
@@ -185,7 +200,7 @@ export class MiniMontagna extends Phaser.Scene {
     it.kind = 'sciatore'; it.seed = Math.random() * 3000;
     it.amp = Math.min(35, (r - l) / 2 - 16);
     it.baseX = Phaser.Math.Between(Math.ceil(l + 16 + it.amp), Math.floor(Math.max(l + 16 + it.amp, r - 16 - it.amp)));
-    it.fast = Phaser.Math.FloatBetween(1.7, 2.1);
+    it.fast = Phaser.Math.FloatBetween(1.45, 1.75);
     it.x = it.baseX; it.body.setSize(8, 10).setOffset(3, 4);
   }
 

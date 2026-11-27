@@ -18,7 +18,7 @@ export class GameOver extends Phaser.Scene {
     txt(this, W / 2, 310, isRecord ? 'NUOVO RECORD!' : 'RECORD: ' + best, 8, isRecord ? '#f08a24' : '#bfe3f0');
 
     const found = data.friends || [];
-    txt(this, W / 2, 345, 'AMICI INCONTRATI: ' + found.length + '/5', 7, '#c8b49a');
+    txt(this, W / 2, 345, 'AMICI BATTUTI: ' + found.length + '/5', 7, '#c8b49a');
 
     const again = txt(this, W / 2, 400, 'TOCCA PER RIPROVARE', 9, '#ffffff');
     this.tweens.add({ targets: again, alpha: 0.2, duration: 500, yoyo: true, repeat: -1 });

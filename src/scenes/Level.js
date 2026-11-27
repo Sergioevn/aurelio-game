@@ -10,7 +10,7 @@ export class Level extends Phaser.Scene {
   create() {
     this.elapsed = 0; this.distance = 0; this.bonus = 0; this.lives = 3;
     this.effects = {}; this.hurtMs = 0; this.spawnMs = 600;
-    this.friendsFound = []; this.nextFriendAt = 9000;
+    this.friendsFound = []; this.beaten = []; this.nextFriendAt = 9000;
     this.boss = null; this.nextBossAt = BOSS.firstAt;
     this.frozen = false; this.ended = false;
 
@@ -48,7 +48,15 @@ export class Level extends Phaser.Scene {
     this.scoreText = txt(this, 8, 12, '0', 8, '#f4d03f', 0).setOrigin(0, 0.5).setDepth(21);
     this.hearts = [];
     for (let i = 0; i < 5; i++) this.hearts.push(this.add.image(W - 12 - i * 13, 12, 'cuore').setScale(1.3).setDepth(21));
-    this.effectText = txt(this, W / 2, 36, '', 7, '#bfe3f0').setDepth(21);
+    this.effectText = txt(this, W / 2, 62, '', 7, '#bfe3f0').setDepth(21);
+
+    // Leggenda amici: facce scure finché non li batti, poi si colorano
+    const fk = Object.keys(FRIENDS);
+    this.add.rectangle(6, 30, fk.length * 19 + 6, 22, 0x1a1423, 0.55).setOrigin(0, 0).setDepth(20);
+    this.legend = {};
+    fk.forEach((k, i) => {
+      this.legend[k] = this.add.image(18 + i * 19, 41, k).setDepth(21).setTint(0x2a2a2a).setAlpha(0.8);
+    });
     this.refreshHearts();
 
     // Cartello stradale: siamo in viale Lombardia
@@ -89,8 +97,10 @@ export class Level extends Phaser.Scene {
     if (!this.boss && this.elapsed >= this.nextBossAt) this.startBoss();
     if (this.boss) this.updateBoss(t, dt, fall);
 
-    // Pulizia oggetti usciti dallo schermo
+    // Pulizia oggetti usciti dallo schermo (+ puzza della pizza animata)
+    const stink = Math.floor(this.elapsed / 260) % 2 ? 'pizza_b' : 'pizza';
     for (const it of [...this.items.getChildren()]) {
+      if (it.kind === 'pizza' && it.texture.key !== stink) it.setTexture(stink);
       if (it.y > H + 40 || it.y < -90) it.destroy();
     }
   }
@@ -153,13 +163,13 @@ export class Level extends Phaser.Scene {
     const it = this.items.create(Phaser.Math.Between(40, W - 40), -20, kind).setScale(2);
     it.kind = kind; it.seed = Math.random() * 1000;
     it.setVelocityY(fall * Phaser.Math.FloatBetween(0.9, 1.1));
-    if (kind === 'pizza') it.setAngularVelocity(Phaser.Math.Between(-90, 90)); // la pizza vola girando
+    if (kind === 'pizza') it.body.setSize(12, 12).setOffset(1, 9); // la puzza non conta come ostacolo
   }
 
   spawnFriend(fall) {
-    const keys = Object.keys(FRIENDS);
-    const missing = keys.filter(k => !this.friendsFound.includes(k));
-    const key = pick(missing.length ? missing : keys);
+    const left = Object.keys(FRIENDS).filter(k => !this.beaten.includes(k));
+    if (!left.length) return;
+    const key = pick(left);
     const it = this.items.create(Phaser.Math.Between(50, W - 50), -24, key).setScale(2.2).setDepth(3);
     it.kind = 'friend'; it.friend = key;
     it.setVelocityY(fall * 0.75);
@@ -202,7 +212,7 @@ export class Level extends Phaser.Scene {
       if (!this.friendsFound.includes(f)) this.friendsFound.push(f);
       this.addBonus(100); sfx.friend();
       if (FRIENDS[f].scene) this.startMini(f);
-      else this.showFriendBanner(f);
+      else this.showFriendBanner(f); // mini-gioco non ancora pronto: per ora vale come battuto
       return;
     }
 
@@ -246,11 +256,12 @@ export class Level extends Phaser.Scene {
     g.add(txt(this, W / 2, H / 2, f.name + '!', 14, '#f4d03f'));
     g.add(txt(this, W / 2, H / 2 + 24, '"' + f.line + '"', 7, '#ffffff'));
     g.add(txt(this, W / 2, H / 2 + 50, 'MINI-GIOCO: ' + f.game, 7, '#bfe3f0'));
-    g.add(txt(this, W / 2, H / 2 + 68, 'PROSSIMAMENTE  +100', 7, '#f08a24'));
+    g.add(txt(this, W / 2, H / 2 + 72, 'IN ARRIVO: PER ORA\nLO BATTI GRATIS', 7, '#f08a24'));
     g.setAlpha(0); g.y = 30;
     this.tweens.add({ targets: g, alpha: 1, y: 0, duration: 220, ease: 'Back.out' });
     this.time.delayedCall(2200, () => {
       g.destroy(); this.frozen = false; this.physics.resume();
+      this.markBeaten(key);
     });
   }
 
@@ -277,10 +288,28 @@ export class Level extends Phaser.Scene {
       this.effects.ski = R.skiMs;
       sfx.boost();
       this.floatText(this.player.x, this.player.y - 50, 'SCI-BLASTER!', '#bfe3f0');
+      this.markBeaten(res.mini);
     } else {
       this.effects.crutches = CRUTCHES.ms;
       this.floatText(this.player.x, this.player.y - 50, CRUTCHES.label, '#ff9ecb');
     }
+  }
+
+  // Amico battuto: la sua faccia si colora e non torna più. Battuti tutti = finale.
+  markBeaten(key) {
+    if (!key || this.beaten.includes(key)) return;
+    this.beaten.push(key);
+    const img = this.legend[key];
+    img.clearTint().setAlpha(1);
+    this.tweens.add({ targets: img, scale: 2, duration: 200, yoyo: true });
+    this.items.getChildren().filter(i => i.friend === key).forEach(i => i.destroy());
+    if (this.beaten.length === Object.keys(FRIENDS).length) this.victory();
+  }
+
+  victory() {
+    this.ended = true; this.physics.pause(); sfx.win();
+    this.floatText(W / 2, H / 2, 'TUTTI BATTUTI!', '#f4d03f');
+    this.time.delayedCall(1500, () => this.scene.start('Finale', { score: this.score() }));
   }
 
   updateShots(dt) {
@@ -344,6 +373,6 @@ export class Level extends Phaser.Scene {
   gameOver() {
     this.ended = true; this.physics.pause(); sfx.over();
     this.player.setTint(0xff6666);
-    this.time.delayedCall(900, () => this.scene.start('GameOver', { score: this.score(), friends: this.friendsFound }));
+    this.time.delayedCall(900, () => this.scene.start('GameOver', { score: this.score(), friends: this.beaten }));
   }
 }
