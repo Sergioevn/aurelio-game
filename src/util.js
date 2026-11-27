@@ -3,6 +3,8 @@ import { PALETTE, SPRITES } from './data/sprites.js';
 export const W = 270;
 export const H = 480;
 export const FONT = 'PressStart';
+// Altezza del personaggio: alzato per lasciare in basso una fascia libera dove appoggiare il dito
+export const PLAYER_Y = H - 140;
 
 export function txt(scene, x, y, str, size = 8, color = '#ffffff', origin = 0.5) {
   return scene.add.text(x, y, str, {

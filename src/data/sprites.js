@@ -356,6 +356,25 @@ export const SPRITES = {
     "K................K",
     "K................K"
   ],
+  "guanto": [
+    "...rr.....",
+    "..rrrr....",
+    "..rrrr.rr.",
+    "..rrrr.rr.",
+    "..rrrrrrr.",
+    "..rrrrrrr.",
+    "..rrrrrr..",
+    "..rrrrrr..",
+    "..wwwwww..",
+    "..wwwwww.."
+  ],
+  "ramo": [
+    "......T...T....T...T...T.......",
+    "....wTTw.TTTw.TTTw.TTTwTTT.....",
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaTT",
+    "...TTTuTTTTuTTTTTuTTTTuTTTT....",
+    ".....TT..TTT..TTT..TT..TT......"
+  ],
   "cuore": [
     ".rr.rr.",
     "rrrrrrr",

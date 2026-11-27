@@ -1,7 +1,7 @@
 // Mini-gioco di Javier: MONTAGNA
 // Fase 1 "La pista": Aurelio risale la pista evitando pali arancioni e sciatori.
-// Fase 2 "La seggiovia": tenere in equilibrio il seggiolino toccando a sinistra/destra.
-import { W, H, txt } from '../util.js';
+// Fase 2 "La seggiovia": il vento porta via il guanto, Aurelio cade e deve riprenderlo in caduta libera.
+import { W, H, txt, PLAYER_Y } from '../util.js';
 import { sfx } from '../sfx.js';
 import { FRIENDS, MONTAGNA as M } from '../data/characters.js';
 
@@ -18,15 +18,15 @@ export class MiniMontagna extends Phaser.Scene {
     this.items = this.physics.add.group();
     this.decor = this.add.group();
 
-    this.player = this.physics.add.sprite(W / 2, H - 70, 'aurelio').setScale(2).setDepth(5);
+    this.player = this.physics.add.sprite(W / 2, PLAYER_Y, 'aurelio').setScale(2).setDepth(5);
     this.player.body.setSize(10, 14).setOffset(4, 12);
-    this.skis = this.add.image(W / 2, H - 40, 'sci_coppia').setScale(2).setDepth(4);
+    this.skis = this.add.image(W / 2, PLAYER_Y + 24, 'sci_coppia').setScale(2).setDepth(4);
     this.stars = this.add.container(0, 0).setDepth(7).setVisible(false);
     for (let i = 0; i < 3; i++) this.stars.add(this.add.image(0, 0, 'stella').setScale(1.5));
 
     this.targetX = null;
     this.input.on('pointerdown', p => this.onDown(p));
-    this.input.on('pointermove', p => { if (p.isDown && this.phase === 'pista') this.targetX = p.x; });
+    this.input.on('pointermove', p => { if (p.isDown && (this.phase === 'pista' || this.phase === 'caduta')) this.targetX = p.x; });
     this.input.on('pointerup', () => { this.targetX = null; });
     this.keys = this.input.keyboard?.createCursorKeys();
     this.physics.add.overlap(this.player, this.items, (pl, it) => this.onHit(it));
@@ -67,13 +67,14 @@ export class MiniMontagna extends Phaser.Scene {
       return;
     }
     if (this.phase === 'pista') { this.targetX = p.x; return; }
-    if (this.phase === 'seggiovia') { this.push(p.x < W / 2 ? -1 : 1); return; }
+    if (this.phase === 'caduta') { this.targetX = p.x; return; }
     if (this.phase === 'result' && this.canLeave) this.leave();
   }
 
   update(t, dt) {
     if (this.phase === 'pista') this.updatePista(dt);
-    else if (this.phase === 'seggiovia') this.updateSeggiovia(dt);
+    else if (this.phase === 'lift') this.updateLift(dt);
+    else if (this.phase === 'caduta') this.updateFall(dt);
   }
 
   // ---------- FASE 1: la pista ----------
@@ -129,10 +130,10 @@ export class MiniMontagna extends Phaser.Scene {
       if (this.keys?.left.isDown) p.x -= step;
       else if (this.keys?.right.isDown) p.x += step;
       else if (this.targetX !== null) { const dx = this.targetX - p.x; p.x += Math.sign(dx) * Math.min(Math.abs(dx), step); }
-      p.y = H - 70 + Math.abs(Math.sin(this.elapsed / 120)) * 2; // passo da risalita
+      p.y = PLAYER_Y + Math.abs(Math.sin(this.elapsed / 120)) * 2; // passo da risalita
     }
     p.x = Phaser.Math.Clamp(p.x, lane.l + 12, lane.r - 12);
-    this.skis.setPosition(p.x, H - 46).setAngle(p.angle);
+    this.skis.setPosition(p.x, PLAYER_Y + 24).setAngle(p.angle);
 
     // Vin brulé: invincibile
     if (this.invMs > 0) {
@@ -237,7 +238,9 @@ export class MiniMontagna extends Phaser.Scene {
     }
   }
 
-  // ---------- FASE 2: la seggiovia ----------
+  // ---------- FASE 2: la seggiovia e il guanto ----------
+  // Aurelio sale in seggiovia, il vento gli porta via un guanto, si sporge e cade.
+  // In caduta libera deve restare in linea col guanto per raggiungerlo prima della neve.
   startSeggiovia() {
     this.phase = 'trans';
     this.stars.setVisible(false);
@@ -250,119 +253,187 @@ export class MiniMontagna extends Phaser.Scene {
     this.decor.clear(true, true); this.nets.clear(); this.gateText.setVisible(false); this.gateDots.forEach(d => d.setVisible(false));
     this.player.setVisible(false); this.skis.setVisible(false);
     this.player.body.enable = false;
-    this.title.setText('LA SEGGIOVIA');
+    this.title.setText('LA SEGGIOVIA'); this.info.setText('');
+    this.lift = this.add.container(0, 0).setDepth(6);
 
-    // Cavo in diagonale: il seggiolino resta fermo, il mondo scorre
-    this.cableA = { x: -20, y: 330 }; this.cableB = { x: W + 20, y: 30 };
-    this.add.line(0, 0, this.cableA.x, this.cableA.y, this.cableB.x, this.cableB.y, 0x1a1423).setOrigin(0).setLineWidth(2).setDepth(6);
-    this.anchor = { x: W / 2, y: this.cableY(W / 2) };
-
-    this.chair = this.add.container(this.anchor.x, this.anchor.y).setDepth(8);
+    // Cavo in diagonale con il seggiolino
+    const ax = W / 2, ay = 170;
+    this.lift.add(this.add.line(0, 0, -20, ay + (W / 2 + 20) * 0.6, W + 20, ay - (W / 2 + 20) * 0.6, 0x1a1423).setOrigin(0).setLineWidth(2));
+    this.chair = this.add.container(ax, ay).setDepth(8);
     const seat = this.add.image(0, 0, 'seggiolino').setScale(2).setOrigin(0.5, 0);
-    const aur = this.add.image(0, 22, 'aurelio').setScale(2).setOrigin(0.5, 0);
-    aur.setCrop(0, 0, 18, 19); // solo dalla vita in su, le gambe stanno davanti al seggiolino
+    const aur = this.add.image(0, 22, 'aurelio').setScale(2).setOrigin(0.5, 0).setCrop(0, 0, 18, 19);
     const legs = this.add.rectangle(0, 58, 24, 10, 0x3d5a8a).setStrokeStyle(2, 0x1a1423);
     const bar = this.add.image(0, 50, 'barra_seggiola').setScale(2).setOrigin(0.5, 0);
-    this.aurChair = aur;
     this.chair.add([seat, aur, legs, bar]);
-
-    // Indicatore di equilibrio
-    const by = H - 60;
-    this.add.rectangle(W / 2, by, 220, 16, 0xc0392b).setStrokeStyle(3, 0x1a1423).setDepth(20);
-    this.add.rectangle(W / 2, by, 150, 12, 0x3a8a3a).setDepth(20);
-    this.needle = this.add.rectangle(W / 2, by, 6, 22, 0xf4d03f).setStrokeStyle(2, 0x1a1423).setDepth(21);
-    this.tapL = txt(this, 40, H - 26, '< TOCCA', 7, '#1a1423').setDepth(21).setStroke('#ffffff', 3);
-    this.tapR = txt(this, W - 40, H - 26, 'TOCCA >', 7, '#1a1423').setDepth(21).setStroke('#ffffff', 3);
-    this.windText = txt(this, W / 2, 120, '', 9, '#2c4166').setDepth(21).setStroke('#ffffff', 3);
-    const hint = txt(this, W / 2, H / 2 + 40, 'TIENI LA BARRA\nNEL VERDE!', 9, '#ffffff').setDepth(25);
-    this.tweens.add({ targets: hint, alpha: 0, delay: 1600, duration: 400, onComplete: () => hint.destroy() });
-
-    this.bal = 0; this.balV = 0; this.elapsed = 0; this.gustMs = 2500; this.pylonMs = 1500;
-    this.phase = 'seggiovia';
+    this.aurChair = aur; this.legsChair = legs;
+    for (let i = 0; i < 6; i++) this.lift.add(this.add.image(Phaser.Math.Between(20, W - 20), Phaser.Math.Between(260, H - 20), 'abete').setScale(2));
+    this.phase = 'lift'; this.liftMs = 0; this.gloveGone = false;
   }
 
-  cableY(x) { const a = this.cableA, b = this.cableB; return a.y + (b.y - a.y) * (x - a.x) / (b.x - a.x); }
-
-  push(dir) {
-    // tocchi a sinistra/destra spingono il seggiolino da quel lato
-    this.balV += dir * 0.9;
-    sfx.tone([dir < 0 ? 520 : 620], 0.04, 'square', 0.03);
-    const t = dir < 0 ? this.tapL : this.tapR;
-    t.setScale(1.3); this.tweens.add({ targets: t, scale: 1, duration: 120 });
+  updateLift(dt) {
+    this.liftMs += dt;
+    this.bg.tilePositionX += 60 * dt / 1000; this.bg.tilePositionY -= 30 * dt / 1000;
+    this.lift.getAll().forEach(o => { if (o.type === 'Image') { o.x -= 60 * dt / 1000; o.y += 30 * dt / 1000; } });
+    this.chair.setAngle(Math.sin(this.liftMs / 400) * 4);
+    if (this.liftMs > 1300 && !this.gloveGone) {
+      // la folata porta via il guanto
+      this.gloveGone = true; sfx.wind();
+      const g = this.add.image(this.chair.x + 6, this.chair.y + 44, 'guanto').setScale(2).setDepth(9);
+      this.flyGlove = g;
+      this.tweens.add({ targets: g, x: this.chair.x + 70, y: H + 40, angle: 540, duration: 1400, ease: 'Quad.in' });
+      this.floatText(W / 2, this.chair.y - 20, M.guanteLine, '#ffffff');
+      // Aurelio si sporge...
+      this.tweens.add({ targets: this.chair, angle: 28, duration: 500, delay: 400, ease: 'Back.out' });
+    }
+    if (this.liftMs > 2500) this.startFall();
   }
 
-  updateSeggiovia(dt) {
+  startFall() {
+    this.phase = 'trans2'; sfx.fall();
+    // Aurelio scivola giù dal seggiolino
+    this.aurChair.setVisible(false); this.legsChair.setVisible(false);
+    const p = this.add.image(this.chair.x + 10, this.chair.y + 50, 'aurelio').setScale(2).setDepth(9);
+    this.tweens.add({ targets: p, y: H + 60, angle: 200, duration: 700, ease: 'Quad.in', onComplete: () => {
+      p.destroy(); this.flyGlove?.destroy();
+      this.lift.destroy(); this.chair.destroy();
+      this.setupFall();
+    } });
+  }
+
+  setupFall() {
+    this.title.setText('EL GUANTE');
+    this.fallY = 110;
+    this.faller = this.add.image(W / 2, this.fallY, 'aurelio').setScale(2).setDepth(8).setAngle(180);
+    this.stars.setDepth(9);
+    this.glove = this.add.image(W / 2, this.fallY + 210, 'guanto').setScale(2.4).setDepth(7);
+    this.gap = 210; this.gloveBase = Math.random() < 0.5 ? 70 : W - 80; this.gloveKick = 0;
+    this.obst = [];
+    this.elapsed = 0; this.spawnMs = 900; this.gustMs = 2200; this.stunMs = 0; this.targetX = null;
+    // altimetro
+    this.altBar = this.add.rectangle(W - 10, 60, 6, H - 200, 0xffffff).setOrigin(0.5, 0).setStrokeStyle(2, 0x1a1423).setDepth(21);
+    this.altMark = this.add.rectangle(W - 10, 60, 12, 6, 0xf4d03f).setStrokeStyle(2, 0x1a1423).setDepth(22);
+    const hint = txt(this, W / 2, H / 2 + 30, 'RESTA SOPRA IL GUANTO\nPER RAGGIUNGERLO!', 8, '#ffffff').setDepth(25);
+    this.tweens.add({ targets: hint, alpha: 0, delay: 1800, duration: 400, onComplete: () => hint.destroy() });
+    this.phase = 'caduta';
+  }
+
+  updateFall(dt) {
     const s = dt / 1000;
     this.elapsed += dt;
-    // il mondo scorre in diagonale verso il basso a sinistra
-    this.bg.tilePositionX += 60 * s; this.bg.tilePositionY -= 30 * s;
-    for (const d of this.decor.getChildren()) {
-      d.x -= 60 * s; d.y += 30 * s;
-      if (d.x < -40 || d.y > H + 40) d.destroy();
-    }
-    this.pylonMs -= dt;
-    if (this.pylonMs <= 0) {
-      this.pylonMs = 3200;
-      const x = W + 30, top = this.cableY(x);
-      const pyl = this.add.rectangle(x, top, 6, 400, 0x8a8a96).setOrigin(0.5, 0).setStrokeStyle(2, 0x1a1423).setDepth(5);
-      pyl.isPylon = true; this.decor.add(pyl);
-    }
-    if (Math.random() < s * 2.2) this.decor.add(this.add.image(W + 20, Phaser.Math.Between(200, H - 90), 'abete').setScale(2).setDepth(3));
+    const fall = 320;
+    this.bg.tilePositionY += fall * s; // il mondo sale = Aurelio cade
 
-    // Fisica dell'equilibrio: tende a cadere da un lato, il vento dà spinte
-    const diff = Math.min(1, this.elapsed / M.seggioviaMs);
-    this.balV += this.bal * (1.6 + diff * 1.4) * s;                   // instabilità
-    this.balV += Math.sin(this.elapsed / 700) * (0.35 + diff * 0.4) * s; // dondolio
+    // Movimento di Aurelio
+    const p = this.faller;
+    if (this.stunMs > 0) {
+      this.stunMs -= dt;
+      this.stars.setVisible(true).setPosition(p.x, p.y + 30);
+      this.stars.getAll().forEach((st, i) => { const a = this.elapsed / 150 + i * 2.1; st.setPosition(Math.cos(a) * 14, Math.sin(a) * 4); });
+      p.setAngle(180 + Math.sin(this.elapsed / 50) * 20);
+    } else {
+      this.stars.setVisible(false);
+      const step = 220 * s;
+      if (this.keys?.left.isDown) p.x -= step;
+      else if (this.keys?.right.isDown) p.x += step;
+      else if (this.targetX !== null) { const dx = this.targetX - p.x; p.x += Math.sign(dx) * Math.min(Math.abs(dx), step); }
+      p.x = Phaser.Math.Clamp(p.x, 22, W - 26);
+      p.setAngle(180 + Math.sin(this.elapsed / 180) * 6);
+    }
+
+    // Il guanto svolazza; ogni tanto una folata lo sposta di lato
     this.gustMs -= dt;
     if (this.gustMs <= 0) {
-      const dir = Math.random() < 0.5 ? -1 : 1;
-      this.balV += dir * (0.9 + diff * 0.6);
-      this.gustMs = Phaser.Math.Between(2200, 3400) - diff * 700;
-      this.windText.setText(dir < 0 ? '<<< VENTO' : 'VENTO >>>').setAlpha(1);
-      this.tweens.add({ targets: this.windText, alpha: 0, delay: 500, duration: 300 });
+      this.gustMs = Phaser.Math.Between(1800, 2800);
+      const dir = this.gloveBase < W / 2 ? 1 : -1; // la folata lo porta dall'altra parte
+      this.tweens.add({ targets: this, gloveBase: Phaser.Math.Clamp(this.gloveBase + dir * Phaser.Math.Between(90, 150), 60, W - 70), duration: 600, ease: 'Sine.inOut' });
       sfx.wind();
     }
-    this.balV *= Math.pow(0.35, s); // attrito
-    this.bal += this.balV * s;
+    const gx = Phaser.Math.Clamp(this.gloveBase + Math.sin(this.elapsed / 380) * 34, 24, W - 30);
+    const dxG = Math.abs(gx - p.x);
+    const align = this.stunMs > 0 ? 0 : 1 - Phaser.Math.Clamp((dxG - 8) / 32, 0, 1);
+    this.gap += (M.driftAway - (M.catchRate + M.driftAway) * align) * s;
+    this.gap = Phaser.Math.Clamp(this.gap, 0, 300);
+    this.glove.setPosition(gx, this.fallY + 20 + this.gap).setAngle(Math.sin(this.elapsed / 200) * 25);
+    // linea tratteggiata "di mira" quando sei in linea
+    this.glove.setTint(align > 0.6 ? 0xffffff : 0xdddddd);
 
-    this.chair.setAngle(this.bal * 32);
-    this.needle.x = W / 2 + this.bal * 107;
-    this.timeBar.width = W * Math.max(0, 1 - this.elapsed / M.seggioviaMs);
-    this.info.setText(Math.ceil(Math.max(0, M.seggioviaMs - this.elapsed) / 1000) + ' S');
+    // Ostacoli: rami e piloni salgono dal basso
+    this.spawnMs -= dt;
+    if (this.spawnMs <= 0 && this.elapsed < M.cadutaMs - 1500) {
+      this.spawnMs = Phaser.Math.Between(700, 1000);
+      if (Math.random() < 0.7) {
+        const left = Math.random() < 0.5;
+        const o = this.add.image(left ? 0 : W, H + 20, 'ramo').setScale(2).setOrigin(0, 0.5).setDepth(6);
+        if (!left) o.setFlipX(true).setOrigin(1, 0.5);
+        o.kind = 'ramo'; this.obst.push(o);
+      } else {
+        const o = this.add.rectangle(Phaser.Math.Between(40, W - 40), H + 80, 10, 150, 0x8a8a96).setStrokeStyle(2, 0x1a1423).setDepth(6);
+        o.kind = 'pilone'; this.obst.push(o);
+      }
+    }
+    const pb = new Phaser.Geom.Rectangle(p.x - 12, p.y - 20, 24, 40);
+    for (const o of this.obst) {
+      o.y -= fall * s;
+      if (!o.hit && this.stunMs <= 0 && Phaser.Geom.Intersects.RectangleToRectangle(pb, o.getBounds())) {
+        o.hit = true; this.stunMs = 700; this.gap = Math.min(300, this.gap + 70);
+        sfx.hit(); this.cameras.main.shake(150, 0.01);
+        this.floatText(p.x, p.y + 50, o.kind === 'ramo' ? '¡AY! UN RAMO' : '¡AY! IL PILONE', '#ff6b5b');
+      }
+    }
+    this.obst = this.obst.filter(o => { if (o.y < -120) { o.destroy(); return false; } return true; });
 
-    if (Math.abs(this.bal) >= 1) this.fallFromChair();
-    else if (Math.abs(this.bal) > 150 / 220) this.needle.fillColor = 0xff6b5b;
-    else this.needle.fillColor = 0xf4d03f;
+    // Altimetro e tempo
+    const prog = Math.min(1, this.elapsed / M.cadutaMs);
+    this.altMark.y = this.altBar.y + this.altBar.height * prog;
+    this.info.setText(Math.max(0, Math.round((1 - prog) * 120)) + ' M');
+    this.timeBar.width = W * (1 - prog);
 
-    if (this.elapsed >= M.seggioviaMs) this.arrive();
+    // Preso!
+    if (this.gap < 26 && dxG < 22 && this.stunMs <= 0) { this.land(true); return; }
+    if (this.elapsed >= M.cadutaMs) this.land(false);
   }
 
-  // Inside joke: Aurelio cade dalla seggiovia e finisce a testa in giù nella neve
-  fallFromChair() {
-    this.phase = 'done'; sfx.fall();
-    const dir = Math.sign(this.bal);
-    this.chair.setAngle(dir * 40);
-    this.aurChair.setVisible(false);
-    const p = this.add.image(this.chair.x + dir * 10, this.chair.y + 50, 'aurelio').setScale(2).setDepth(9);
-    this.floatText(W / 2, this.chair.y - 20, M.fallLine, '#ff6b5b');
-    this.tweens.add({ targets: p, x: p.x + dir * 50, y: H - 140, angle: dir * 540 + 180, duration: 1000, ease: 'Quad.in',
-      onComplete: () => {
-        p.setAngle(180).setPosition(p.x, H - 150);
-        this.cameras.main.shake(250, 0.015); sfx.hit();
-        // mucchio di neve: si vedono solo le gambe
-        this.add.ellipse(p.x, H - 120, 74, 36, 0xffffff).setStrokeStyle(2, 0xc8d4e4).setDepth(10);
-        const e = this.add.particles(p.x, H - 130, 'spark', { speed: { min: 40, max: 120 }, angle: { min: 200, max: 340 }, lifespan: 500, quantity: 16, emitting: false }).setDepth(11);
-        e.explode(16);
-        this.time.delayedCall(1300, () => this.result(false, M.fallLine));
-      } });
+  // Atterraggio: in ogni caso a testa in giù nella neve (inside joke)
+  land(caught) {
+    this.phase = 'done';
+    this.stars.setVisible(false);
+    this.obst.forEach(o => o.destroy()); this.obst = [];
+    const p = this.faller;
+    if (caught) { this.glove.setVisible(false); sfx.boost(); this.floatText(p.x, p.y + 40, 'PRESO!', '#f4d03f'); }
+    const gy = 300; // livello della neve
+    const ground = this.add.rectangle(W / 2, H + 10, W, H, 0xf2f6fc).setOrigin(0.5, 0).setDepth(9);
+    this.tweens.add({ targets: ground, y: gy, duration: 600, ease: 'Quad.out' });
+    this.tweens.add({ targets: p, y: gy - 6, x: Phaser.Math.Clamp(p.x, 60, W - 60), angle: 180, duration: 600, ease: 'Quad.in', onComplete: () => {
+      this.cameras.main.shake(260, 0.018); sfx.hit();
+      p.setDepth(8);
+      this.add.ellipse(p.x, gy + 2, 76, 30, 0xffffff).setStrokeStyle(2, 0xc8d4e4).setDepth(10);
+      const e = this.add.particles(p.x, gy, 'spark', { speed: { min: 40, max: 130 }, angle: { min: 200, max: 340 }, lifespan: 500, quantity: 18, emitting: false }).setDepth(11);
+      e.explode(18);
+      if (caught) {
+        // un braccio spunta dalla neve e sventola il guanto
+        const arm = this.add.container(p.x + 26, gy - 4).setDepth(11);
+        arm.add(this.add.rectangle(0, 0, 6, 22, 0xeab38b).setOrigin(0.5, 1).setStrokeStyle(2, 0x1a1423));
+        arm.add(this.add.image(0, -26, 'guanto').setScale(2));
+        arm.setScale(1, 0);
+        this.tweens.add({ targets: arm, scaleY: 1, duration: 300, delay: 300 });
+        this.tweens.add({ targets: arm, angle: { from: -20, to: 20 }, duration: 260, yoyo: true, repeat: -1, delay: 600 });
+        this.time.delayedCall(500, () => this.floatText(W / 2, gy + 50, M.tengoLine, '#f4d03f'));
+        this.time.delayedCall(2000, () => this.arrive());
+      } else {
+        // il guanto si posa con calma lì accanto
+        this.glove.setDepth(11);
+        this.tweens.add({ targets: this.glove, x: p.x + 50, y: gy + 6, angle: 0, duration: 1400, ease: 'Sine.out' });
+        this.time.delayedCall(2200, () => this.result(false, 'SENZA GUANTO...'));
+      }
+    } });
   }
 
   arrive() {
     this.phase = 'done'; sfx.win();
     const j = this.add.image(W / 2, -40, 'javier').setScale(4).setDepth(30);
-    this.tweens.add({ targets: j, y: 110, duration: 700, ease: 'Back.out' });
-    const box = this.add.rectangle(W / 2, 200, W - 20, 76, 0x1a1423, 0.9).setStrokeStyle(2, 0xf4d03f).setDepth(30).setAlpha(0);
-    const line = txt(this, W / 2, 200, FRIENDS.javier.endLine, 8, '#ffffff').setDepth(31).setAlpha(0);
+    this.tweens.add({ targets: j, y: 80, duration: 700, ease: 'Back.out' });
+    const box = this.add.rectangle(W / 2, 172, W - 20, 76, 0x1a1423, 0.9).setStrokeStyle(2, 0xf4d03f).setDepth(30).setAlpha(0);
+    const line = txt(this, W / 2, 172, FRIENDS.javier.endLine, 8, '#ffffff').setDepth(31).setAlpha(0);
     this.tweens.add({ targets: [box, line], alpha: 1, delay: 700, duration: 300 });
     this.time.delayedCall(3600, () => { j.destroy(); box.destroy(); line.destroy(); this.result(true); });
   }

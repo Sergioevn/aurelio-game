@@ -1,4 +1,4 @@
-import { W, H, txt } from '../util.js';
+import { W, H, txt, PLAYER_Y } from '../util.js';
 import { sfx } from '../sfx.js';
 import { FRIENDS, BOOSTERS, OBSTACLES, CRUTCHES, SPAWN_WEIGHTS, BOSS, MONTAGNA } from '../data/characters.js';
 
@@ -17,7 +17,7 @@ export class Level extends Phaser.Scene {
     this.bg = this.add.tileSprite(W / 2, H / 2, W, H, 'road');
     this.items = this.physics.add.group();
 
-    this.player = this.physics.add.sprite(W / 2, H - 62, 'aurelio').setScale(2).setDepth(5);
+    this.player = this.physics.add.sprite(W / 2, PLAYER_Y, 'aurelio').setScale(2).setDepth(5);
     this.player.body.setSize(12, 20).setOffset(3, 4);
     this.racket = this.add.image(0, 0, 'racchetta').setScale(1.6).setDepth(6).setVisible(false);
     this.crutches = this.add.image(0, 0, 'stampelle').setScale(2).setDepth(4).setVisible(false);
@@ -56,7 +56,7 @@ export class Level extends Phaser.Scene {
     sign.add(this.add.rectangle(0, 0, 196, 42, 0xf4f1ea).setStrokeStyle(3, 0x1a1423));
     sign.add(this.add.text(0, -6, 'VIALE LOMBARDIA', { fontFamily: 'PressStart', fontSize: '9px', color: '#1a1423' }).setOrigin(0.5).setResolution(4));
     sign.add(this.add.text(0, 10, 'MILANO', { fontFamily: 'PressStart', fontSize: '6px', color: '#5a4030' }).setOrigin(0.5).setResolution(4));
-    const hint = txt(this, W / 2, H / 2 + 10, 'TRASCINA IL DITO\nPER MUOVERTI', 9).setDepth(30);
+    const hint = txt(this, W / 2, H - 50, 'TRASCINA QUI\nIL DITO', 9).setDepth(30);
     this.tweens.add({ targets: [hint, sign], alpha: 0, delay: 2200, duration: 600, onComplete: () => { hint.destroy(); sign.destroy(); } });
   }
 
@@ -117,9 +117,9 @@ export class Level extends Phaser.Scene {
     this.crutches.setVisible(lame);
     if (lame) {
       const hop = Math.abs(Math.sin(this.elapsed / 140)) * 3;
-      p.y = H - 62 - hop;
-      this.crutches.setPosition(p.x, H - 55 - hop * 0.3).setAngle(Math.sin(this.elapsed / 140) * 4);
-    } else p.y = H - 62;
+      p.y = PLAYER_Y - hop;
+      this.crutches.setPosition(p.x, PLAYER_Y + 7 - hop * 0.3).setAngle(Math.sin(this.elapsed / 140) * 4);
+    } else p.y = PLAYER_Y;
     p.setFlipX(this.targetX !== null && this.targetX < p.x - 2);
 
     this.racket.setVisible(!!this.effects.padel);

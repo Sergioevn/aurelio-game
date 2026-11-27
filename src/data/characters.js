@@ -58,8 +58,11 @@ export const MONTAGNA = {
   boostMs: 4000,         // durata vin brulé (invincibile)
   stunPalo: 1500,        // ms stordito dopo un palo
   stunSciatore: 900,
-  seggioviaMs: 15000,    // durata fase 2 (seggiovia)
+  cadutaMs: 12000,       // durata caduta libera (fase 2)
+  catchRate: 70,         // quanto ci si avvicina al guanto stando in linea (px/s)
+  driftAway: 50,         // quanto si allontana se non sei in linea (px/s)
   crashLine: 'OTRA VEZ LOS PALOS!',
-  fallLine: '¡ME CAIGO!',
+  guanteLine: '¡MI GUANTE!',
+  tengoLine: '¡LO TENGO!',
   reward: { points: 300, life: 1, skiMs: 7000 }  // se vince: punti, vita in più, sci-blaster
 };
