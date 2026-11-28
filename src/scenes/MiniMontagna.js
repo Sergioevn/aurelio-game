@@ -17,6 +17,7 @@ export class MiniMontagna extends Phaser.Scene {
 
   create() {
     this.phase = 'intro'; this.elapsed = 0; this.crashes = 0; this.stunMs = 0;
+    this.canStart = false; this.canLeave = false; this.win = false; this.arrived = false; this.gloveGone = false;
     this.dist = 0; this.gates = 0; this.streak = 0; this.invMs = 0; this.gateList = []; this.allGates = []; this.lastGateX = null; this.lastGateDist = -9999;
     this.bg = this.add.tileSprite(W / 2, H / 2, W, H, 'snow');
     this.items = this.physics.add.group();

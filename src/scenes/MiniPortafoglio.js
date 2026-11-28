@@ -18,6 +18,7 @@ export class MiniPortafoglio extends Phaser.Scene {
   create() {
     this.phase = 'intro'; this.elapsed = 0; this.targetX = null;
     this.soldi = P.soldi; this.items = []; this.rows = [];
+    this.canStart = false; this.canLeave = false; this.win_ = false; this.rocking = false; this.bubble = null; this.hits = 0; this.hurtMs = 0;
 
     this.bg = this.add.tileSprite(W / 2, H / 2, W, H, 'road');
     this.player = this.add.image(W / 2 - 50, PLAYER_Y, 'aurelio').setScale(2).setDepth(5);

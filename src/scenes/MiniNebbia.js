@@ -17,6 +17,9 @@ export class MiniNebbia extends Phaser.Scene {
   create() {
     this.phase = 'intro'; this.elapsed = 0; this.stunMs = 0; this.sigaMs = 0;
     this.fogAlpha = 0; this.radius = N.luce; this.targetX = null; this.lolloStill = false;
+    // stato che deve ripartire da zero ogni volta che il mini-gioco viene rilanciato dal livello
+    this.inQuad = false; this.lostQuad = false; this.grabIcons = null; this.sayTxt = null;
+    this.canStart = false; this.canLeave = false; this.win_ = false; this.grabs = 0;
 
     this.bg = this.add.tileSprite(W / 2, H / 2, W, H, 'road');
     this.items = [];
