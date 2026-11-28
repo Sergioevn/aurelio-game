@@ -9,7 +9,8 @@ export const PALETTE = {
   "l": "#a07e5c", "L": "#c8a682", "c": "#c8b49a", "K": "#151515", "R": "#d03050", "a": "#5a2a1c",
   "A": "#8a4430", "G": "#bfe3f0", "f": "#fff8e0", "p": "#7a1236", "v": "#3a8a3a", "x": "#8a8a96", "V": "#8bd650",
   "q": "#6e6a66", "Q": "#9a948c", "z": "#e23b2e", "Z": "#ffd27a", "t": "#d9893a", "T": "#3f7d3a", "u": "#2f5e2c",
-  "C": "#d4142a", "D": "#7a0a18", "N": "#d9a520", "M": "#9a6a3a", "P": "#5e3a1c", "W": "#ffffff"
+  "C": "#d4142a", "D": "#7a0a18", "N": "#d9a520", "M": "#9a6a3a", "P": "#5e3a1c", "W": "#ffffff",
+  "E": "#7a4a2e", "F": "#5c351f"
 };
 
 export const SPRITES = {
@@ -86,6 +87,38 @@ export const SPRITES = {
     "..ssssssssss..",
     "..BBwwsswwBB..",
     ".BBBBwwwwBBBB."
+  ],
+  "lollo_panico": [
+    "..llLlLllLl...",
+    ".llllllllllll.",
+    ".lllLllllLlll.",
+    "..lsssssssssl.",
+    "..skkssssskks.",
+    ".swwessssewws.",
+    ".swwessssewws.",
+    "ssssssSSssssss",
+    ".sssllllllsss.",
+    ".ssskkkkkksss.",
+    ".ssskmmmmksss.",
+    "..sskkkkkkss..",
+    "..BBwwsswwBB..",
+    ".BBBBwwwwBBBB."
+  ],
+  "amico": [
+    "...kkkkkkkk...",
+    "..kkkkkkkkkk..",
+    ".kkEEEEEEEEkk.",
+    ".kEEEEEEEEEEk.",
+    ".EEkkEEEEkkEE.",
+    ".EEwwEEEEwwEE.",
+    ".EEweEEEEewEE.",
+    "EEEEEEFFEEEEEE",
+    ".EEEEEFFEEEEE.",
+    ".EEEEEEEEEEEE.",
+    ".EEEmmmmmmEEE.",
+    "..EEEEEEEEEE..",
+    "...EEEEEEEE...",
+    "....EEEEEE...."
   ],
   "antonio": [
     "...hHhHhHhh...",

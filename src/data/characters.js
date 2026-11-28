@@ -110,6 +110,27 @@ export const NEBBIA = {
   fogMs: 8000                              // se perde: nebbia nel livello
 };
 
+// Nebbia, fase 2: IN QUAD. Aurelio guida, Lollo dietro. Stare sulla traccia lo calma:
+// quando la barra è piena si accende una siga e, se la fumi tutta senza farlo agitare, hai vinto.
+export const QUAD = {
+  durataMs: 25000,        // tempo massimo per far fumare Lollo
+  vel: 140,               // velocità dello sterrato (px/s)
+  maxVx: 160,             // velocità laterale massima del quad (px/s)
+  accel: 5,               // inerzia dello sterzo: più basso = più "pesante"
+  traccia: [50, 32],      // larghezza della traccia: all'inizio e alla fine (px)
+  curve: [0, 80],         // ampiezza delle curve: all'inizio e alla fine (px)
+  calmaStart: 35,         // barra della tranquillità (0-100) all'inizio
+  calmaSu: 8,             // sulla traccia sale di tanto al secondo
+  calmaGiu: 12,           // fuori traccia scende di tanto al secondo
+  buca: 22,               // quanto toglie una buca o un sasso
+  panico: 35,             // sotto questo valore Lollo è in panico
+  fumoMs: 3500,           // quanto deve durare la siga per vincere
+  fumoMin: 65,            // se durante la siga la barra scende sotto, la siga cade
+  ostacoloEvery: [1100, 1600],
+  lineePanico: ['PIANO AURÉ!'],
+  lineaBuca: "C'È UNA BUCA!!"
+};
+
 // Mini-gioco Portafoglio (Antonio): fase 1 shopping, fase 2 in barca
 export const PORTAFOGLIO = {
   shopMs: 20000,          // durata fase 1

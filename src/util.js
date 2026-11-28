@@ -1,5 +1,5 @@
 // Versione dell'app mostrata nel menu. A ogni rilascio aggiornala INSIEME a CACHE_VERSION in sw.js.
-export const VERSION = 'v2.1';
+export const VERSION = 'v2.2';
 
 import { PALETTE, SPRITES } from './data/sprites.js';
 
@@ -153,6 +153,42 @@ export function makeTextures(scene) {
   for (let y = 14; y < 49; y += 5) bc.fillRect(4, y, 18, 1); // assi del ponte
   bc.fillStyle = '#c0392b'; bc.fillRect(3, 26, 20, 2);       // riga rossa sullo scafo
   boat.refresh();
+
+  // Sterrato (sfondo del quad di Lollo): terra con sassolini ed erba ai bordi
+  const dirt = scene.textures.createCanvas('sterrato', W, 96);
+  const dc = dirt.getContext();
+  dc.fillStyle = '#b08a5a'; dc.fillRect(0, 0, W, 96);
+  for (let i = 0; i < 180; i++) {
+    dc.fillStyle = Math.random() < 0.5 ? '#a07a4c' : '#c09a68';
+    dc.fillRect(Math.floor(Math.random() * W), Math.floor(Math.random() * 96), 2, 2);
+  }
+  dc.fillStyle = '#6a8a3a'; dc.fillRect(0, 0, 10, 96); dc.fillRect(W - 10, 0, 10, 96);
+  dc.fillStyle = '#7fa046';
+  for (let y = 0; y < 96; y += 8) { dc.fillRect(8, y, 4, 3); dc.fillRect(W - 12, y + 4, 4, 3); }
+  dirt.refresh();
+
+  // Quad visto dall'alto, muso verso l'alto (30x46)
+  const qd = scene.textures.createCanvas('quad', 30, 46);
+  const qc = qd.getContext();
+  const wheel = (x, y) => { qc.fillStyle = '#1a1423'; qc.fillRect(x, y, 7, 11); qc.fillStyle = '#3a3a44'; qc.fillRect(x + 1, y + 1, 5, 9);
+    qc.fillStyle = '#1a1423'; for (let i = 2; i < 10; i += 3) qc.fillRect(x + 1, y + i, 5, 1); };
+  wheel(0, 3); wheel(23, 3); wheel(0, 32); wheel(23, 32);
+  qc.fillStyle = '#1a1423'; qc.fillRect(5, 1, 20, 44);
+  qc.fillStyle = '#c0392b'; qc.fillRect(6, 2, 18, 42);
+  qc.fillStyle = '#e05a48'; qc.fillRect(7, 3, 16, 8);          // parafango davanti
+  qc.fillStyle = '#2a2a2a'; qc.fillRect(4, 12, 22, 2);         // manubrio
+  qc.fillStyle = '#f4d03f'; qc.fillRect(9, 3, 3, 2); qc.fillRect(18, 3, 3, 2); // fari
+  qc.fillStyle = '#3a3a44'; qc.fillRect(9, 15, 12, 26);        // sella lunga (per due)
+  qc.fillStyle = '#4a4a55'; qc.fillRect(10, 16, 10, 24);
+  qd.refresh();
+
+  // Buca nello sterrato (18x10)
+  const bu = scene.textures.createCanvas('buca', 18, 10);
+  const bx = bu.getContext();
+  bx.fillStyle = '#1a1423'; bx.beginPath(); bx.ellipse(9, 5, 9, 5, 0, 0, Math.PI * 2); bx.fill();
+  bx.fillStyle = '#5a3e22'; bx.beginPath(); bx.ellipse(9, 5, 8, 4, 0, 0, Math.PI * 2); bx.fill();
+  bx.fillStyle = '#3a2814'; bx.beginPath(); bx.ellipse(9, 6, 6, 2.5, 0, 0, Math.PI * 2); bx.fill();
+  bu.refresh();
 
   // Aura (alone morbido bianco, colorato con il tint): per racchetta e microfono
   const AS = 32;

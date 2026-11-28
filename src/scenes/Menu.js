@@ -50,6 +50,7 @@ export class Menu extends Phaser.Scene {
     const mini = new URLSearchParams(location.search).get('mini');
     if (mini === 'montagna') { this.scene.start('MiniMontagna', { standalone: true }); return; }
     if (mini === 'nebbia') { this.scene.start('MiniNebbia', { standalone: true }); return; }
+    if (mini === 'quad') { this.scene.start('MiniNebbia', { standalone: true, quad: true }); return; }
     if (mini === 'portafoglio') { this.scene.start('MiniPortafoglio', { standalone: true }); return; }
     if (mini === 'barca') { this.scene.start('MiniPortafoglio', { standalone: true, barca: true }); return; }
     this.scene.start('Level');
