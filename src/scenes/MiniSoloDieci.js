@@ -248,7 +248,7 @@ export class MiniSoloDieci extends Phaser.Scene {
     if (this.phase === 'result') {
       if (!this.canLeave) return;
       if (this.win_) { this.block = true; this.morning(); }
-      else if (!this.standalone) this.leave();   // perso nel livello: niente RIPROVA, si continua
+      else this.leave();   // perso: niente RIPROVA, si continua
       return;
     }
     if (this.phase === 'morning') { if (this.canLeave) this.leave(); return; }
@@ -789,18 +789,9 @@ export class MiniSoloDieci extends Phaser.Scene {
     } else {
       g.add(txt(this, W / 2, H / 2 + 26, this.standalone ? 'LE BRACCIA NON\nRISPONDONO PIÙ' : 'NEL LIVELLO: DOMS\n(NON PUOI MANGIARE)', 7, '#c8b49a'));
     }
-    if (!win && !this.standalone) {
+    if (!win) {
       const go = txt(this, W / 2, H / 2 + 100, 'TOCCA PER CONTINUARE', 7, '#f08a24');
       g.add(go); this.tweens.add({ targets: go, alpha: 0.3, duration: 450, yoyo: true, repeat: -1 });
-    } else if (!win) {
-      // solo nel link di prova (?mini=solodieci): RIPROVA / MENU, come negli altri mini-giochi
-      const retry = txt(this, W / 2, H / 2 + 74, '[ RIPROVA ]', 9, '#f08a24').setInteractive({ useHandCursor: true });
-      const other = txt(this, W / 2, H / 2 + 102, '[ MENU ]', 7, '#c8b49a').setInteractive({ useHandCursor: true });
-      retry.on('pointerdown', (p, x, y, e) => { e.stopPropagation(); if (this.canLeave) this.retry(); });
-      other.on('pointerdown', (p, x, y, e) => { e.stopPropagation(); if (this.canLeave) this.leave(); });
-      this.input.keyboard?.once('keydown-SPACE', () => { if (this.phase === 'result') this.retry(); });
-      g.add([retry, other]);
-      this.tweens.add({ targets: retry, alpha: 0.3, duration: 450, yoyo: true, repeat: -1 });
     }
     g.setAlpha(0).setY(30);
     this.tweens.add({ targets: g, alpha: 1, y: 0, duration: 250, ease: 'Back.out' });
@@ -847,8 +838,6 @@ export class MiniSoloDieci extends Phaser.Scene {
     this.time.delayedCall(900, () => { this.canLeave = true; });
     this.time.delayedCall(3600, () => { if (this.phase === 'morning') this.leave(); });
   }
-
-  retry() { this.phase = 'left'; sfx.musicStop(); this.scene.restart({ standalone: this.standalone }); }
 
   leave() {
     if (this.phase === 'left') return;

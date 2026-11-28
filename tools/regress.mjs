@@ -74,8 +74,8 @@ const CASES = {
   } },
   antonio: { scene: 'MiniPortafoglio', play: ['shop'], field: 'elapsed', ends: {
     'perso nello shopping': async () => { await waitPhase('MiniPortafoglio', ['shop']); await ev(() => window.game.scene.getScene('MiniPortafoglio').shopLost()); },
-    'perso in barca (durante un\'onda)': async () => { await waitPhase('MiniPortafoglio', ['shop']); await ev(() => window.game.scene.getScene('MiniPortafoglio').shopDone()); await waitPhase('MiniPortafoglio', ['barca'], 15000); await sleep(1500); await ev(() => { const s = window.game.scene.getScene('MiniPortafoglio'); s.boatHit(); s.boatLost(); }); },
-    'vinto in barca': async () => { await waitPhase('MiniPortafoglio', ['shop']); await ev(() => window.game.scene.getScene('MiniPortafoglio').shopDone()); await waitPhase('MiniPortafoglio', ['barca'], 15000); await sleep(1500); await ev(() => window.game.scene.getScene('MiniPortafoglio').boatWin()); },
+    'perso in barca (Camparino finito)': async () => { await waitPhase('MiniPortafoglio', ['shop']); await ev(() => window.game.scene.getScene('MiniPortafoglio').shopDone()); await waitPhase('MiniPortafoglio', ['boatIntro'], 15000); await sleep(700); await tap(); await waitPhase('MiniPortafoglio', ['walk']); await sleep(1000); await ev(() => window.game.scene.getScene('MiniPortafoglio').boatLost()); },
+    'vinto in barca (consegna)': async () => { await waitPhase('MiniPortafoglio', ['shop']); await ev(() => window.game.scene.getScene('MiniPortafoglio').shopDone()); await waitPhase('MiniPortafoglio', ['boatIntro'], 15000); await sleep(700); await tap(); await waitPhase('MiniPortafoglio', ['walk']); await sleep(1000); await ev(() => { const s = window.game.scene.getScene('MiniPortafoglio'); s.gag = 3; s.reached(); }); },
   } },
   francesco: { scene: 'MiniCheers', play: ['play'], field: 't', ends: {
     'perso': async () => { await waitPhase('MiniCheers', ['play']); await sleep(1500); await ev(() => window.game.scene.getScene('MiniCheers').lose()); },
@@ -121,7 +121,7 @@ for (const [key, c] of Object.entries(CASES)) {
       const extra = await ev(s => {
         const m = window.game.scene.getScene(s), out = [];
         if (s === 'MiniNebbia' && (m.inQuad || (m.grabIcons && m.grabIcons.some(g => !g.scene)))) out.push('stato quad/telefonini rimasto dal giro prima');
-        if (s === 'MiniPortafoglio' && m.rocking) out.push('barca "rocking" rimasto dal giro prima');
+        if (s === 'MiniPortafoglio' && (m.rig || m.gag || m.glassAt || m.camparino < 100)) out.push('stato della barca rimasto dal giro prima');
         if (s === 'MiniSoloDieci' && (m.count || m.real > 3 || m.flatK || m.catanOn || m.lState === 'final')) out.push('stato di SOLO DIECI rimasto dal giro prima');
         return out;
       }, c.scene);

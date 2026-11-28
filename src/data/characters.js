@@ -146,12 +146,29 @@ export const PORTAFOGLIO = {
   spawnEvery: [550, 800], // ogni quanto cade una cavolata (ms)
   antonioSpeed: 145,      // Antonio corre verso le cavolate (Aurelio va a 230)
   saveLines: ['SGRADEVOLE!', 'AVVOCATO', 'LORDI', 'MI CONSENTA'],  // quando Aurelio gliela soffia
-  barcaMs: 16000,         // durata fase 2
-  maxOnde: 3,             // onde prese prima di affondare
-  ondaEvery: 1150,        // ogni quanto arriva una fila di onde (ms)
-  gapStart: 92, gapEnd: 72,      // varco tra le onde (px), si stringe
-  seaStart: 120, seaEnd: 165,    // velocità del mare (px/s)
-  balloLines: ['STO DA DIO!!', 'HY HAA!'],
+  // Fase 2: CAMERIERE DI BORDO. Aurelio porta un Camparino ad Antonio camminando sul ponte.
+  // Tieni premuto = cammina; prima di ogni onda la prua si alza: se cammina durante il rollio, il Camparino trabocca.
+  barca: {
+    walkSpeed: 100,         // velocità di Aurelio sul ponte (px/s)
+    reach: 38,              // distanza di consegna da Antonio (px)
+    spillRate: 85,          // Camparino perso al secondo camminando durante il rollio (su 100)
+    lightWaves: 1,          // la prima onda è leggera (serve a imparare)
+    lightPower: 0.5,        // ...e fanno perdere la metà
+    warnMs: [1100, 900],    // preavviso (prua che si alza): prima onda / dopo
+    rollMs: 1000,           // durata del rollio (pericolo)
+    calmMs: [1300, 1900],   // tratto calmo tra due onde (3-4 passi)
+    resumeCalmMs: 600,      // calma quando si riparte dopo una gag (poi arriva il preavviso dell'onda)
+    doppiaCalmMs: 650,      // pausa tra le due onde ravvicinate dopo il Saint Barth
+    pitch: 6,               // inclinazione massima della barca (gradi)
+    impeccabile: 80,        // da qui in su: "CAMPARINO IMPECCABILE"
+    goccio: 25,             // sotto: "HAI SALVATO IL GHIACCIO"
+    // posizioni sul ponte (x nel mondo; poppa a sinistra = 0, prua a destra)
+    lunghezza: 600, aurelioX: 480, antonioX: 290, macarenaX: 215, caimanX: 520, poppaX: 56
+  },
+  balloLines: ['Sto da Dio!'],
+  saintBarth: 'Caiman, ma quello\nè un Saint Barth?',
+  hyyyha: 'HYYY HA!',
+  karaoke: 'Ragazzi,\nstasera Karaoke',
   reward: { points: 300 },       // vinto: +300 e camparini al posto degli spritz per sempre
   losePoints: 150                // perso: Aurelio paga il conto (-150 punti)
 };

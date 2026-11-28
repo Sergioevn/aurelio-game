@@ -266,8 +266,7 @@ export class MiniCheers extends Phaser.Scene {
   down() {
     if (this.phase === 'intro') { if (this.canStart) this.startGame(); return; }
     if (this.phase === 'result') {
-      // perso nel link di prova: ci sono i pulsanti RIPROVA / MENU
-      if (this.canLeave && !(this.standalone && !this.win_)) this.leave();
+      if (this.canLeave) this.leave();
       return;
     }
     if (this.phase !== 'play' || this.holding) return;
@@ -560,17 +559,7 @@ export class MiniCheers extends Phaser.Scene {
       g.add(txt(this, W / 2, H / 2 - 86, 'SERATA INFINITA', 12, '#ff6b5b'));
       g.add(txt(this, W / 2, H / 2 + 14, this.standalone ? 'GIORGIO E CAIMAN\nTI HANNO PRESO' : 'ESCI SBRONZO:\nTUTTO ONDEGGIA', 7, '#c8b49a'));
     }
-    let go;
-    if (!win && this.standalone) {
-      go = txt(this, W / 2, H / 2 + 70, '[ RIPROVA ]', 9, '#f08a24').setInteractive({ useHandCursor: true });
-      const menu = txt(this, W / 2, H / 2 + 96, '[ MENU ]', 7, '#c8b49a').setInteractive({ useHandCursor: true });
-      go.on('pointerdown', (p, x, y, e) => { e.stopPropagation(); if (this.canLeave) this.retry(); });
-      menu.on('pointerdown', (p, x, y, e) => { e.stopPropagation(); if (this.canLeave) this.scene.start('Menu'); });
-      this.input.keyboard?.once('keydown-SPACE', () => this.retry());
-      g.add(menu);
-    } else {
-      go = txt(this, W / 2, H / 2 + 86, 'TOCCA PER CONTINUARE', 7, '#f08a24');
-    }
+    const go = txt(this, W / 2, H / 2 + 86, 'TOCCA PER CONTINUARE', 7, '#f08a24');
     g.add(go);
     this.tweens.add({ targets: go, alpha: 0.3, duration: 450, yoyo: true, repeat: -1 });
     g.setAlpha(0).setY(30); pint.setAlpha(0);
@@ -578,8 +567,6 @@ export class MiniCheers extends Phaser.Scene {
     this.tweens.add({ targets: g, y: 0, duration: 250, ease: 'Back.out' });
     this.time.delayedCall(800, () => { this.canLeave = true; });
   }
-
-  retry() { this.phase = 'left'; this.scene.restart({ standalone: this.standalone }); }
 
   leave() {
     this.phase = 'left';
