@@ -1,9 +1,14 @@
 // Mini-gioco di Javier: MONTAGNA
-// Fase 1 "La pista": Aurelio risale la pista evitando pali arancioni e sciatori.
-// Fase 2 "La seggiovia": il vento porta via il guanto, Aurelio cade e deve riprenderlo in caduta libera.
+// Fase 1 "La pista": Aurelio scia dietro a Javier (che fa acrobazie) tra porte e sciatori,
+//   fino alla partenza della seggiovia.
+// Fase 2 "La seggiovia": il vento porta via il guanto, Aurelio cade e deve riprenderlo in caduta libera
+//   (bombardini = più vicino al guanto, Carlos l'aquila = più lontano).
 import { W, H, txt, PLAYER_Y } from '../util.js';
 import { sfx } from '../sfx.js';
 import { FRIENDS, MONTAGNA as M } from '../data/characters.js';
+
+const JAVI_Y = 118;    // altezza di Javier sulla pista
+const STATION_Y = 150; // dove si ferma la partenza della seggiovia
 
 export class MiniMontagna extends Phaser.Scene {
   constructor() { super('MiniMontagna'); }
@@ -12,15 +17,18 @@ export class MiniMontagna extends Phaser.Scene {
 
   create() {
     this.phase = 'intro'; this.elapsed = 0; this.crashes = 0; this.stunMs = 0;
-    this.dist = 0; this.gates = 0; this.streak = 0; this.invMs = 0; this.gateList = []; this.allGates = []; this.lastGateX = null;
+    this.dist = 0; this.gates = 0; this.streak = 0; this.invMs = 0; this.gateList = []; this.allGates = []; this.lastGateX = null; this.lastGateDist = -9999;
     this.bg = this.add.tileSprite(W / 2, H / 2, W, H, 'snow');
-    this.nets = this.add.graphics().setDepth(1);
     this.items = this.physics.add.group();
     this.decor = this.add.group();
 
     this.player = this.physics.add.sprite(W / 2, PLAYER_Y, 'aurelio').setScale(2).setDepth(5);
     this.player.body.setSize(8, 12).setOffset(5, 13);
     this.skis = this.add.image(W / 2, PLAYER_Y + 24, 'sci_coppia').setScale(2).setDepth(4);
+    // Javier scia davanti ad Aurelio, alla stessa velocità, e fa acrobazie
+    this.javi = this.add.image(W / 2, JAVI_Y, 'javier_sci').setScale(2).setDepth(6);
+    this.javiSay = txt(this, W / 2, JAVI_Y - 46, '', 7, '#ffffff').setDepth(8).setVisible(false);
+    this.javiMs = 1200; this.trickMs = 2000; this.javiLine = 0;
     this.stars = this.add.container(0, 0).setDepth(7).setVisible(false);
     for (let i = 0; i < 3; i++) this.stars.add(this.add.image(0, 0, 'stella').setScale(1.5));
 
@@ -73,30 +81,14 @@ export class MiniMontagna extends Phaser.Scene {
 
   update(t, dt) {
     if (this.phase === 'pista') this.updatePista(dt);
+    else if (this.phase === 'arrivo') this.updateArrivo(dt);
     else if (this.phase === 'lift') this.updateLift(dt);
     else if (this.phase === 'caduta') this.updateFall(dt);
   }
 
   // ---------- FASE 1: la pista ----------
-  // La pista è delimitata da reti arancioni che si stringono e curvano.
-  corridor(d) {
-    const prog = Phaser.Math.Clamp(this.elapsed / M.pistaMs, 0, 1);
-    const half = M.pistaHalfStart - (M.pistaHalfStart - M.pistaHalfEnd) * prog;
-    let c = W / 2 + Math.sin(d / 240) * (25 + 25 * prog) + Math.sin(d / 97) * 8;
-    c = Phaser.Math.Clamp(c, half + 8, W - half - 8);
-    return { l: c - half, r: c + half };
-  }
-
-  drawNets() {
-    const g = this.nets; g.clear();
-    for (let y = -6; y < H; y += 6) {
-      const d = this.dist + (H - y);
-      const { l, r } = this.corridor(d);
-      g.fillStyle(0xd6dfeb, 1); g.fillRect(0, y, l, 6); g.fillRect(r, y, W - r, 6); // fuori pista
-      if (Math.floor(d / 6) % 2) { g.fillStyle(0xf08a24, 1); g.fillRect(l - 2, y, 3, 6); g.fillRect(r - 1, y, 3, 6); }
-      else { g.fillStyle(0x1a1423, 1); g.fillRect(l - 1, y, 1, 6); g.fillRect(r, y, 1, 6); }
-    }
-  }
+  // Pista larga tutto lo schermo (gli abeti stanno sui bordi)
+  corridor() { return { l: 12, r: W - 12 }; }
 
   updatePista(dt) {
     this.elapsed += dt;
@@ -105,7 +97,6 @@ export class MiniMontagna extends Phaser.Scene {
     const scroll = (stunned ? speed * 0.25 : speed) * dt / 1000;
     this.dist += scroll;
     this.bg.tilePositionY -= scroll;
-    this.drawNets();
     for (const d of this.decor.getChildren()) { d.y += scroll; if (d.y > H + 30) d.destroy(); }
     for (const it of [...this.items.getChildren()]) {
       it.y += scroll * (it.kind === 'sciatore' ? it.fast : 1);
@@ -146,8 +137,9 @@ export class MiniMontagna extends Phaser.Scene {
       if (this.keys?.left.isDown) p.x -= step;
       else if (this.keys?.right.isDown) p.x += step;
       else if (this.targetX !== null) { const dx = this.targetX - p.x; p.x += Math.sign(dx) * Math.min(Math.abs(dx), step); }
-      p.y = PLAYER_Y + Math.abs(Math.sin(this.elapsed / 120)) * 2; // passo da risalita
+      p.y = PLAYER_Y;
     }
+    this.updateJavi(dt);
     p.x = Phaser.Math.Clamp(p.x, lane.l + 12, lane.r - 12);
     this.skis.setPosition(p.x, PLAYER_Y + 24).setAngle(p.angle);
 
@@ -164,15 +156,13 @@ export class MiniMontagna extends Phaser.Scene {
     // Comparsa ostacoli e decorazioni
     this.spawnMs -= dt;
     if (this.spawnMs <= 0 && this.elapsed < M.pistaMs - 1500) {
-      if (Math.random() < 0.55) this.spawnGate();
+      if (Math.random() < 0.6 && this.dist - this.lastGateDist >= M.gateMinDist) this.spawnGate();
       else { this.spawnSkier(0); if (Math.random() < 0.25 + this.elapsed / M.pistaMs * 0.3) this.spawnSkier(-70); }
       this.spawnMs = Math.max(600, 1000 - this.elapsed / 1000 * 22);
     }
-    if (Math.random() < dt / 450) {
-      const { l, r } = this.corridor(this.dist + H + 30);
-      const side = Math.random() < 0.5;
-      if (side && l > 22) this.decor.add(this.add.image(Phaser.Math.Between(8, l - 12), -30, 'abete').setScale(2).setDepth(2));
-      if (!side && W - r > 22) this.decor.add(this.add.image(Phaser.Math.Between(r + 12, W - 8), -30, 'abete').setScale(2).setDepth(2));
+    if (Math.random() < dt / 500) {
+      const x = Math.random() < 0.5 ? Phaser.Math.Between(0, 8) : Phaser.Math.Between(W - 8, W);
+      this.decor.add(this.add.image(x, -30, 'abete').setScale(2).setDepth(2));
     }
 
     this.info.setText('SCHIANTI ' + this.crashes + '/' + M.maxCrash);
@@ -180,7 +170,86 @@ export class MiniMontagna extends Phaser.Scene {
     const lit = this.invMs > 0 ? M.gatesForBoost : this.streak % M.gatesForBoost;
     this.gateDots.forEach((d, i) => d.setFillStyle(i < lit ? 0xf4d03f : 0xffffff));
     this.timeBar.width = W * Math.max(0, 1 - this.elapsed / M.pistaMs);
-    if (this.elapsed >= M.pistaMs) { this.player.clearTint(); this.invMs = 0; this.startSeggiovia(); }
+    if (this.elapsed >= M.pistaMs) this.startArrivo();
+  }
+
+  // Javier: scia a zig-zag davanti ad Aurelio, ogni tanto un'acrobazia e una frase
+  updateJavi(dt) {
+    const j = this.javi;
+    j.x = W / 2 + Math.sin(this.elapsed / 700) * 85;
+    j.y = JAVI_Y + Math.sin(this.elapsed / 260) * 2;
+    if (!j.tricking) j.setAngle(Math.cos(this.elapsed / 700) * 12);
+    this.trickMs -= dt;
+    if (this.trickMs <= 0) { this.trickMs = Phaser.Math.Between(2000, 3000); this.trick(); }
+    this.javiMs -= dt;
+    if (this.javiMs <= 0) {
+      this.javiMs = 3400;
+      this.javiSay.setText(M.javiLines[this.javiLine++ % M.javiLines.length]).setVisible(true);
+      this.time.delayedCall(2000, () => this.javiSay.setVisible(false));
+    }
+    this.javiSay.setPosition(Phaser.Math.Clamp(j.x, 80, W - 80), j.y - 46);
+  }
+
+  trick() {
+    const j = this.javi; j.tricking = true;
+    const done = () => { j.tricking = false; j.setScale(2); };
+    const kind = Phaser.Math.Between(0, 2);
+    if (kind === 0) this.tweens.add({ targets: j, angle: { from: 0, to: 360 }, duration: 600, ease: 'Sine.inOut', onComplete: done }); // 360
+    else if (kind === 1) this.tweens.add({ targets: j, scale: 3, angle: -25, duration: 320, yoyo: true, ease: 'Quad.out', onComplete: done }); // salto
+    else this.tweens.add({ targets: j, scaleY: { from: 2, to: -2 }, duration: 300, yoyo: true, ease: 'Sine.inOut', onComplete: done }); // salto mortale
+  }
+
+  // Fine pista: arriva la partenza della seggiovia, Aurelio e Javier si fermano lì
+  startArrivo() {
+    this.phase = 'arrivo'; this.arrived = false;
+    this.javiSay.setVisible(false); this.javiMs = 99999;
+    this.player.clearTint(); this.invMs = 0; this.stunMs = 0;
+    this.stars.setVisible(false); this.player.setAngle(0); this.skis.setAngle(0);
+    this.items.getChildren().forEach(it => { it.body.enable = false; this.tweens.add({ targets: it, alpha: 0, duration: 400 }); });
+    const st = this.add.container(W / 2, -170).setDepth(2);
+    // cavi che salgono verso la montagna, con i seggiolini
+    st.add(this.add.rectangle(-34, -210, 2, 420, 0x1a1423));
+    st.add(this.add.rectangle(34, -210, 2, 420, 0x1a1423));
+    for (const y of [-70, -170, -270]) {
+      st.add(this.add.image(-34, y, 'seggiolino').setScale(1.5).setOrigin(0.5, 0));
+      st.add(this.add.image(34, y + 50, 'seggiolino').setScale(1.5).setOrigin(0.5, 0));
+    }
+    // stazione di partenza
+    st.add(this.add.rectangle(0, 22, 156, 56, 0x9a6a3a).setStrokeStyle(2, 0x1a1423));
+    st.add(this.add.ellipse(0, 26, 48, 40, 0x8a8a96).setStrokeStyle(3, 0x1a1423)); // la ruota
+    st.add(this.add.ellipse(0, 26, 12, 10, 0x1a1423));
+    st.add(this.add.rectangle(0, -10, 170, 16, 0xc0392b).setStrokeStyle(2, 0x1a1423)); // tetto
+    st.add(this.add.rectangle(0, -10, 104, 12, 0x1a1423));
+    st.add(txt(this, 0, -10, 'SEGGIOVIA', 7, '#f4d03f'));
+    st.add(this.add.rectangle(0, 60, 120, 14, 0xffffff).setStrokeStyle(2, 0xc8d4e4)); // pedana d'imbarco
+    this.station = st;
+  }
+
+  updateArrivo(dt) {
+    const st = this.station;
+    const rest = STATION_Y - st.y;
+    if (rest > 0.5) {
+      const scroll = Math.min(rest, Math.max(50, Math.min(200, rest * 2.2)) * dt / 1000);
+      st.y += scroll; this.bg.tilePositionY -= scroll;
+      for (const d of this.decor.getChildren()) d.y += scroll;
+      for (const it of this.items.getChildren()) it.y += scroll;
+      this.elapsed += dt;
+      // Javier è davanti: appena la pedana d'imbarco lo raggiunge ci sale e scende con lei
+      const j = this.javi;
+      if (!j.onBoard && st.y + 58 >= j.y) {
+        j.onBoard = true; this.tweens.killTweensOf(j); j.setScale(2);
+        this.tweens.add({ targets: j, x: W / 2 - 30, angle: 0, duration: 600, ease: 'Sine.out' });
+      }
+      if (j.onBoard) j.y = st.y + 58; else this.updateJavi(dt);
+      return;
+    }
+    if (this.arrived) return;
+    this.arrived = true; sfx.pick();
+    this.tweens.add({ targets: [this.player, this.skis], x: W / 2 + 30, duration: 1100, ease: 'Sine.out' });
+    this.tweens.add({ targets: this.player, y: STATION_Y + 58, duration: 1100, ease: 'Sine.out' });
+    this.tweens.add({ targets: this.skis, y: STATION_Y + 82, duration: 1100, ease: 'Sine.out' });
+    this.time.delayedCall(700, () => this.floatText(W / 2 - 30, STATION_Y + 100, 'SEI LENTO!!', '#ffffff'));
+    this.time.delayedCall(1900, () => this.startSeggiovia());
   }
 
   spawnGate() {
@@ -190,11 +259,11 @@ export class MiniMontagna extends Phaser.Scene {
     const lo = Math.ceil(l + gap / 2 + 8), hi = Math.floor(Math.max(lo, r - gap / 2 - 8));
     const last = this.lastGateX ?? (lo + hi) / 2;
     const cx = Phaser.Math.Clamp(Phaser.Math.Between(Math.round(last - 70), Math.round(last + 70)), lo, hi);
-    this.lastGateX = cx;
+    this.lastGateX = cx; this.lastGateDist = this.dist;
     const gate = { poles: [], done: false };
     for (const x of [cx - gap / 2, cx + gap / 2]) {
       const it = this.items.create(x, -30, 'palo').setScale(2).setDepth(3);
-      it.kind = 'palo'; it.body.setSize(2, 6).setOffset(1.5, 8); it.gate = gate;
+      it.kind = 'palo'; it.body.setSize(5, 7).setOffset(1, 8); it.gate = gate;
       gate.poles.push(it);
     }
     this.gateList.push(gate); this.allGates.push(gate);
@@ -271,7 +340,8 @@ export class MiniMontagna extends Phaser.Scene {
   }
 
   setupSeggiovia() {
-    this.decor.clear(true, true); this.nets.clear(); this.gateText.setVisible(false); this.gateDots.forEach(d => d.setVisible(false));
+    this.decor.clear(true, true); this.station?.destroy(); this.javi.setVisible(false); this.javiSay.setVisible(false);
+    this.gateText.setVisible(false); this.gateDots.forEach(d => d.setVisible(false));
     this.player.setVisible(false); this.skis.setVisible(false);
     this.player.body.enable = false;
     this.title.setText('LA SEGGIOVIA'); this.info.setText('');
@@ -329,11 +399,11 @@ export class MiniMontagna extends Phaser.Scene {
     this.glove = this.add.image(W / 2, this.fallY + 185, 'guanto').setScale(2.4).setDepth(7);
     this.gap = 185; this.gloveBase = Math.random() < 0.5 ? 70 : W - 80; this.gloveKick = 0;
     this.obst = [];
-    this.elapsed = 0; this.spawnMs = 900; this.bombMs = 600; this.gustMs = 2200; this.stunMs = 0; this.targetX = null;
+    this.elapsed = 0; this.carlosMs = 900; this.carlosLine = 0; this.bombMs = 600; this.gustMs = 2200; this.stunMs = 0; this.targetX = null;
     // altimetro
     this.altBar = this.add.rectangle(W - 10, 60, 6, H - 200, 0xffffff).setOrigin(0.5, 0).setStrokeStyle(2, 0x1a1423).setDepth(21);
     this.altMark = this.add.rectangle(W - 10, 60, 12, 6, 0xf4d03f).setStrokeStyle(2, 0x1a1423).setDepth(22);
-    const hint = txt(this, W / 2, H / 2 + 30, 'RESTA SOPRA IL GUANTO\nE PRENDI I BOMBARDINI!', 8, '#ffffff').setDepth(25);
+    const hint = txt(this, W / 2, H / 2 + 30, 'RESTA SOPRA IL GUANTO,\nPRENDI I BOMBARDINI,\nEVITA CARLOS!', 8, '#ffffff').setDepth(25);
     this.tweens.add({ targets: hint, alpha: 0, delay: 1800, duration: 400, onComplete: () => hint.destroy() });
     this.phase = 'caduta';
   }
@@ -378,47 +448,48 @@ export class MiniMontagna extends Phaser.Scene {
     // linea tratteggiata "di mira" quando sei in linea
     this.glove.setTint(align > 0.6 ? 0xffffff : 0xdddddd);
 
-    // Ostacoli: rami e piloni salgono dal basso
-    this.spawnMs -= dt;
-    if (this.spawnMs <= 0 && this.elapsed < M.cadutaMs - 1500) {
-      this.spawnMs = Phaser.Math.Between(700, 1000);
-      if (Math.random() < 0.7) {
-        const left = Math.random() < 0.5;
-        const o = this.add.image(left ? 0 : W, H + 20, 'ramo').setScale(2).setOrigin(0, 0.5).setDepth(6);
-        if (!left) o.setFlipX(true).setOrigin(1, 0.5);
-        o.kind = 'ramo'; this.obst.push(o);
-      } else {
-        const o = this.add.rectangle(Phaser.Math.Between(40, W - 40), H + 80, 10, 150, 0x8a8a96).setStrokeStyle(2, 0x1a1423).setDepth(6);
-        o.kind = 'pilone'; this.obst.push(o);
-      }
+    // Carlos, l'aquila: sale dal basso e parla; se lo colpisci ti allontani dal guanto
+    this.carlosMs -= dt;
+    if (this.carlosMs <= 0 && this.elapsed < M.cadutaMs - 1500) {
+      this.carlosMs = M.carlosEvery + Phaser.Math.Between(-250, 250);
+      const near = Math.random() < 0.5; // metà delle volte punta verso Aurelio
+      const x = near ? Phaser.Math.Clamp(p.x + Phaser.Math.Between(-30, 30), 40, W - 40) : Phaser.Math.Between(40, W - 40);
+      const o = this.add.image(x, H + 30, 'carlos').setScale(2).setDepth(7);
+      o.kind = 'carlos'; o.baseX = x; o.seed = Math.random() * 3000;
+      o.flap = this.tweens.add({ targets: o, scaleY: 1.5, duration: 150, yoyo: true, repeat: -1 });
+      o.say = txt(this, x, o.y + 40, M.carlosLines[this.carlosLine++ % M.carlosLines.length], 6, '#ffe9c4').setDepth(12);
+      this.obst.push(o);
     }
     // Bombardini: prenderli fa avvicinare al guanto
     this.bombMs -= dt;
     if (this.bombMs <= 0 && this.elapsed < M.cadutaMs - 1200) {
       this.bombMs = M.bombardinoEvery + Phaser.Math.Between(-200, 200);
       const bx = Phaser.Math.Clamp(this.glove.x + Phaser.Math.Between(-70, 70), 30, W - 40);
-      const o = this.add.image(bx, H + 20, 'bombardino').setScale(2).setDepth(7);
+      const o = this.add.image(bx, H + 20, 'bombardino').setScale(2).setDepth(8);
       o.kind = 'bombardino'; this.obst.push(o); this.spawnedB = (this.spawnedB || 0) + 1;
       this.tweens.add({ targets: o, scale: 2.4, duration: 300, yoyo: true, repeat: -1 });
     }
     const pb = new Phaser.Geom.Rectangle(p.x - 12, p.y - 20, 24, 40);
     for (const o of this.obst) {
+      if (o.kind === 'carlos') {
+        o.y -= fall * 0.8 * s;
+        if (!o.hit) o.x = o.baseX + Math.sin((this.elapsed + o.seed) / 300) * 26;
+        o.say.setPosition(Phaser.Math.Clamp(o.x, 70, W - 70), o.y + 40);
+        if (!o.hit && this.stunMs <= 0 && Phaser.Geom.Intersects.RectangleToRectangle(pb, new Phaser.Geom.Rectangle(o.x - 20, o.y - 14, 40, 28))) this.hitCarlos(o, p);
+        continue;
+      }
       o.y -= fall * s;
       if (o.kind === 'bombardino') {
         if (!o.hit && Phaser.Geom.Intersects.RectangleToRectangle(pb, o.getBounds())) {
           o.hit = true; o.setVisible(false); this.bombs = (this.bombs || 0) + 1;
           this.gap = Math.max(0, this.gap - M.bombardinoGain); sfx.boost();
-          this.floatText(p.x, p.y + 50, 'BOMBARDINO!', '#f4d03f');
+          this.floatText(p.x, p.y + 50, 'BOMBARDINO!\nTURBO!', '#f4d03f');
+          this.speedLines(p);
         }
         continue;
       }
-      if (!o.hit && this.stunMs <= 0 && Phaser.Geom.Intersects.RectangleToRectangle(pb, o.getBounds())) {
-        o.hit = true; this.stunMs = 700; this.gap = Math.min(300, this.gap + 35);
-        sfx.hit(); this.cameras.main.shake(150, 0.01);
-        this.floatText(p.x, p.y + 50, o.kind === 'ramo' ? '¡AY! UN RAMO' : '¡AY! IL PILONE', '#ff6b5b');
-      }
     }
-    this.obst = this.obst.filter(o => { if (o.y < -120) { o.destroy(); return false; } return true; });
+    this.obst = this.obst.filter(o => { if (o.y < -120) { o.say?.destroy(); o.destroy(); return false; } return true; });
 
     // Altimetro e tempo
     const prog = Math.min(1, this.elapsed / M.cadutaMs);
@@ -431,11 +502,36 @@ export class MiniMontagna extends Phaser.Scene {
     if (this.elapsed >= M.cadutaMs) this.land(false);
   }
 
+  // Colpita Carlos: piume, l'aquila vola via girando, Aurelio rallenta e si allontana dal guanto
+  hitCarlos(o, p) {
+    o.hit = true; o.flap.stop();
+    this.stunMs = 700; this.gap = Math.min(300, this.gap + M.carlosPush);
+    sfx.hit(); this.cameras.main.shake(180, 0.012);
+    const e = this.add.particles(o.x, o.y, 'spark', {
+      speed: { min: 50, max: 160 }, lifespan: 700, quantity: 22, scale: { start: 2, end: 1 },
+      tint: [0x8a4430, 0x9a6a3a, 0x5e3a1c, 0xf4f1ea], gravityY: -120, rotate: { min: 0, max: 360 }, emitting: false
+    }).setDepth(13);
+    e.explode(22);
+    this.time.delayedCall(900, () => e.destroy());
+    this.floatText(p.x, p.y + 50, 'CRAAA!\nFRENATO!', '#ff6b5b');
+    const away = o.x < p.x ? -1 : 1;
+    this.tweens.add({ targets: o, x: o.x + away * 140, y: o.y - 60, angle: away * 720, scale: 1.2, alpha: 0, duration: 800, ease: 'Quad.out' });
+    this.tweens.add({ targets: o.say, alpha: 0, duration: 500 });
+  }
+
+  // Bombardino: strisce di velocità sopra Aurelio
+  speedLines(p) {
+    for (let i = 0; i < 5; i++) {
+      const l = this.add.rectangle(p.x + Phaser.Math.Between(-18, 18), p.y - 30, 2, 18, 0xffffff).setDepth(7);
+      this.tweens.add({ targets: l, y: l.y - 60, alpha: 0, duration: 350, delay: i * 40, onComplete: () => l.destroy() });
+    }
+  }
+
   // Atterraggio: in ogni caso a testa in giù nella neve (inside joke)
   land(caught) {
     this.phase = 'done';
     this.stars.setVisible(false);
-    this.obst.forEach(o => o.destroy()); this.obst = [];
+    this.obst.forEach(o => { o.say?.destroy(); o.destroy(); }); this.obst = [];
     const p = this.faller;
     if (caught) { this.glove.setVisible(false); sfx.boost(); this.floatText(p.x, p.y + 40, 'PRESO!', '#f4d03f'); }
     const gy = 300; // livello della neve

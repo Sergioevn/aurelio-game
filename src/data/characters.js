@@ -59,14 +59,13 @@ export const BOSS = {
 export const MONTAGNA = {
   pistaMs: 20000,        // durata fase 1 (pista)
   maxCrash: 3,           // schianti prima di perdere
-  pistaHalfStart: 95,    // mezza larghezza della pista all'inizio (px)
-  pistaHalfEnd: 72,      // ...e alla fine: le reti si stringono
-  gateGapStart: 104,     // spazio tra i due pali di una porta (larghe: ci passano anche gli sciatori)
-  gateGapEnd: 92,
+  gateGapStart: 110,     // spazio tra i due pali di una porta (larghe: ci passano anche gli sciatori)
+  gateGapEnd: 98,
+  gateMinDist: 210,      // distanza minima (px) tra una porta e la successiva
   freeGap: 44,           // spazio che uno sciatore in porta lascia sempre libero per Aurelio
   gatePoints: 20,        // punti per ogni porta (si sommano al premio se vince)
   gatesForBoost: 3,      // porte di fila per il vin brulé
-  boostMs: 4000,         // durata vin brulé (invincibile)
+  boostMs: 2500,         // durata vin brulé (invincibile)
   stunPalo: 1500,        // ms stordito dopo un palo
   stunSciatore: 900,
   cadutaMs: 12000,       // durata caduta libera (fase 2)
@@ -74,6 +73,10 @@ export const MONTAGNA = {
   driftAway: 6,         // quanto si allontana se non sei in linea (px/s)
   bombardinoGain: 42,    // ogni bombardino preso avvicina al guanto (px)
   bombardinoEvery: 1300, // ogni quanto compare un bombardino (ms)
+  carlosEvery: 1250,     // ogni quanto compare Carlos, l'aquila (ms)
+  carlosPush: 38,        // se colpisci Carlos ti allontani dal guanto (px)
+  carlosLines: ['¡ESE HIJO DE P#@!%\nME HA ROTO\nLA RODILLA!', 'HA! HA!', 'PIÙ TARDI\nFACCIAMO UN DRINK'],
+  javiLines: ['MA COME FA A NON\nPIACERTI AURELIO?!', '¡ÁNDALE!', 'SEI LENTO!!'],
   crashLine: 'OTRA VEZ LOS PALOS!',
   guanteLine: '¡MI GUANTE!',
   tengoLine: '¡LO TENGO!',
