@@ -81,6 +81,22 @@ const CASES = {
     'perso': async () => { await waitPhase('MiniCheers', ['play']); await sleep(1500); await ev(() => window.game.scene.getScene('MiniCheers').lose()); },
     'vinto': async () => { await waitPhase('MiniCheers', ['play']); await sleep(1500); await ev(() => window.game.scene.getScene('MiniCheers').win()); },
   } },
+  sergio: { scene: 'MiniSoloDieci', play: ['play'], field: 'playT', ends: {
+    'perso (DOMS pieni)': async () => { await waitPhase('MiniSoloDieci', ['play']); await sleep(1500); await ev(() => { const s = window.game.scene.getScene('MiniSoloDieci'); s.count = 8; s.real = 19; s.repT = 0; s.repCounted = false; }); },
+    'vinto (decima convalidata)': async () => { await waitPhase('MiniSoloDieci', ['play']); await sleep(1500); await ev(() => { const s = window.game.scene.getScene('MiniSoloDieci'); s.count = 9; s.real = 11; s.lastValidRep = -1; s.repT = 100; s.queue = []; s.seg = { type: 'look', ms: 500 }; s.segT = 0; s.check = { resolved: false }; }); },
+  }, leave: async () => {
+    // vinto: riepilogo -> mattino dopo -> livello; perso: pulsante CONTINUA
+    if (!await waitPhase('MiniSoloDieci', ['result'], 15000)) return 'NON arriva al risultato';
+    await sleep(1100);
+    const win = await ev(() => window.game.scene.getScene('MiniSoloDieci').win_);
+    if (win) { await tap(); if (!await waitPhase('MiniSoloDieci', ['morning'], 3000)) return 'niente scena del mattino'; }
+    else await tap();   // perso: nel livello niente RIPROVA, un tocco e si continua
+    try { await page.waitForFunction(() => !window.game.scene.isActive('MiniSoloDieci') && window.game.scene.isActive('Level'), null, { timeout: 6000 }); }
+    catch { return 'non torna al livello'; }
+    const doms = await ev(() => window.game.scene.getScene('Level').effects.doms);
+    if (!(doms > 0)) return 'effetto DOMS non applicato nel livello';
+    return null;
+  } },
 };
 
 const only = process.argv[3];
@@ -94,7 +110,7 @@ for (const [key, c] of Object.entries(CASES)) {
     // 1° giro
     await launchMini(key, c.scene);
     try { await end(); } catch (e) { msg.push('fine 1° giro fallita: ' + e.message.split('\n')[0]); }
-    const r1 = await leaveResult(c.scene); if (r1) msg.push('1° giro: ' + r1);
+    const r1 = c.leave ? await c.leave() : await leaveResult(c.scene); if (r1) msg.push('1° giro: ' + r1);
     // 2° e 3° giro: deve ripartire normalmente
     for (const giro of [2, 3]) {
       await launchMini(key, c.scene);
@@ -106,6 +122,7 @@ for (const [key, c] of Object.entries(CASES)) {
         const m = window.game.scene.getScene(s), out = [];
         if (s === 'MiniNebbia' && (m.inQuad || (m.grabIcons && m.grabIcons.some(g => !g.scene)))) out.push('stato quad/telefonini rimasto dal giro prima');
         if (s === 'MiniPortafoglio' && m.rocking) out.push('barca "rocking" rimasto dal giro prima');
+        if (s === 'MiniSoloDieci' && (m.count || m.real > 3 || m.flatK || m.catanOn || m.lState === 'final')) out.push('stato di SOLO DIECI rimasto dal giro prima');
         return out;
       }, c.scene);
       msg.push(...extra.map(x => `${giro}° giro: ${x}`));

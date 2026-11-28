@@ -54,6 +54,7 @@ export class Menu extends Phaser.Scene {
     if (mini === 'portafoglio') { this.scene.start('MiniPortafoglio', { standalone: true }); return; }
     if (mini === 'barca') { this.scene.start('MiniPortafoglio', { standalone: true, barca: true }); return; }
     if (mini === 'cheers') { this.scene.start('MiniCheers', { standalone: true }); return; }
+    if (mini === 'solodieci' || mini === 'sergio') { this.scene.start('MiniSoloDieci', { standalone: true }); return; }
     this.scene.start('Level');
   }
 

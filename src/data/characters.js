@@ -5,7 +5,7 @@ export const FRIENDS = {
   javier:    { name: 'JAVIER',    game: 'MONTAGNA',     line: 'ANDIAMO IN MONTAGNA', scene: 'MiniMontagna',
                endLine: '¡A LA CAMA A LAS 21:00,\nQUE MAÑANA SE ESQUÍA\nOTRA VEZ!' },
   francesco: { name: 'FRANCESCO', game: "L'ULTIMA PRIMA CHE ARRIVINO", line: 'Un\'altra birra?', scene: 'MiniCheers' },
-  sergio:    { name: 'SERGIO',    game: 'CALISTHENICS', line: 'Solo 3 serie, giuro' },
+  sergio:    { name: 'SERGIO',    game: 'SOLO DIECI',   line: 'Solo 3 serie, giuro', scene: 'MiniSoloDieci' },
   antonio:   { name: 'ANTONIO',   game: 'IL PORTAFOGLIO', line: 'GUARDA CHE AFFARE!', scene: 'MiniPortafoglio',
                winLine: 'CAMPARINO?', loseLine: 'SGRADEVOLE' },
   lollo:     { name: 'LOLLO',     game: 'LA NEBBIA',    line: 'SÀ', scene: 'MiniNebbia',
@@ -201,4 +201,38 @@ export const CHEERS = {
   loseLines: ['AH PERFETTO,\nSTAI ANCORA BEVENDO!', 'QUATTRO MEDIE!'],
   reward: { points: 300, fugaMs: 6000 },  // vinto: +300 e turbo di fuga nel livello
   sbronzaMs: 8000                          // perso: sbronza nel livello (schermo che ondeggia, comandi imprecisi)
+};
+
+// Mini-gioco di Sergio: SOLO DIECI. Area calisthenics: Sergio fa handstand push-up dando le spalle
+// ad Aurelio e ogni tanto si gira a controllare. Aurelio (tieni premuto = flessioni) deve farsi
+// contare 10 flessioni facendone il meno possibile: ogni flessione VERA riempie i DOMS.
+export const SOLODIECI = {
+  target: 10,             // flessioni convalidate da Sergio per vincere
+  domsMax: 20,            // flessioni reali che riempiono la barra "DOMS DI DOMANI" (= sconfitta)
+  repMs: 800,             // durata di una flessione di Aurelio (discesa + risalita)
+  bottomAt: 0.45,         // a che punto della flessione Aurelio tocca giù (lì la flessione conta come fatta)
+  graceMs: 120,           // tolleranza: Sergio "vede" ancora per tanto dopo essersi girato
+  // Ritmo di Sergio, per fase (i controlli contano dall'inizio della partita, anche dopo un azzeramento)
+  //   rep = handstand push-up normale; slow = l'ultimo, rallentato (inizio del segnale);
+  //   sway = oscillazione in verticale; turn = la testa ruota; look = guarda Aurelio; back = torna a guardare il muro
+  fasi: [
+    { daControllo: 0, reps: [1, 1], repMs: 750, slow: 950,  sway: 300, turn: 250, look: 500, back: 200, hold: 0, double: 0, pausa: [0, 0] },
+    { daControllo: 3, reps: [0, 1], repMs: 720, slow: 900,  sway: 280, turn: 240, look: 480, back: 200, hold: 0.3, double: 0.25, pausa: [0, 200] },
+    { daControllo: 7, reps: [0, 1], repMs: 700, slow: 850,  sway: 260, turn: 220, look: 450, back: 180, hold: 0.25, double: 0, pausa: [0, 450] }
+  ],
+  holdMs: [500, 900],     // breve tenuta in verticale (fase 2 e 3)
+  // Frasi
+  numeri: ['UNO!', 'DUE!', 'TRE!', 'QUATTRO!', 'CINQUE!', 'SEI!', 'SETTE!', 'OTTO!', 'NOVE!', 'DIECI!'],
+  extra: ['DAI!', 'PULITA!', 'QUESTA VALE!'],
+  resetLines: ['EH NO, QUESTA\nNON VALE. DA CAPO.', 'TI HO VISTO FERMO.', 'NON BARARE.', 'ERANO DIECI\nDI FILA.'],
+  ludoDai: 'Dai Aurelito!',
+  ludoDaiMax: 3,          // al massimo tante volte per partita
+  catan: ['IO NON PARLO…', 'MA TU MI AIUTI\nAL CATAN.'],
+  catanDopo: 2,           // il patto sul Catan può scattare dopo questo numero di controlli
+  winLines: ['Vedi che, Fra,\nne ha fatte dieci.', 'Visto? Con la musica\nrussa è tutto\npiù facile.'],
+  loseDue: 'Ne mancavano\nsolo due.',
+  losePoche: 'Dai, ne mancavano\npoche.',
+  voti: [[12, 'DOMS CONTENUTI'], [16, 'DOMS DEVASTANTI'], [99, 'DOMANI NON SI ALZA']],
+  reward: { points: 300, domsMs: 6000 },  // vinto: +300 e DOMS corti nel livello
+  domsMs: 15000                           // perso: DOMS lunghi nel livello (cibo e drink rimbalzano, più lento)
 };

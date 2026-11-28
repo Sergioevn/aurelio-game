@@ -1,7 +1,7 @@
 // Service worker: salva il gioco sul telefono così funziona anche offline.
 // IMPORTANTE: a ogni rilascio aggiorna CACHE_VERSION (così i telefoni scaricano la versione nuova)
 // e mettila uguale a VERSION in src/util.js (è quella che si vede nel menu).
-const CACHE_VERSION = 'v2.4';
+const CACHE_VERSION = 'v2.5';
 const CACHE = 'aurelio-' + CACHE_VERSION;
 const FILES = [
   './', './index.html', './manifest.webmanifest',
@@ -9,7 +9,7 @@ const FILES = [
   './assets/icons/icon-192.png', './assets/icons/icon-512.png', './assets/icons/apple-touch-icon.png',
   './src/main.js', './src/util.js', './src/sfx.js',
   './src/data/sprites.js', './src/data/characters.js',
-  './src/scenes/Boot.js', './src/scenes/Menu.js', './src/scenes/Level.js', './src/scenes/GameOver.js', './src/scenes/MiniMontagna.js', './src/scenes/Finale.js', './src/scenes/MiniNebbia.js', './src/scenes/MiniPortafoglio.js', './src/scenes/MiniCheers.js'
+  './src/scenes/Boot.js', './src/scenes/Menu.js', './src/scenes/Level.js', './src/scenes/GameOver.js', './src/scenes/MiniMontagna.js', './src/scenes/Finale.js', './src/scenes/MiniNebbia.js', './src/scenes/MiniPortafoglio.js', './src/scenes/MiniCheers.js', './src/scenes/MiniSoloDieci.js'
 ];
 
 self.addEventListener('install', e => {

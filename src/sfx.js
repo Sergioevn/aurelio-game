@@ -58,5 +58,75 @@ export const sfx = {
       this._amb = src;
     } catch {}
   },
-  ambientStop() { try { this._amb?.stop(); } catch {} this._amb = null; }
+  ambientStop() { try { this._amb?.stop(); } catch {} this._amb = null; },
+
+  // ---- SOLO DIECI (Sergio) ----
+  thud()   { this.tone([95, 70], 0.04, 'sine', 0.09); },                 // mani di Aurelio sul tappeto
+  conta()  { this.tone([784, 1175], 0.06, 'square', 0.05); },             // Sergio convalida
+  buzz()   { this.tone([180, 120], 0.16, 'sawtooth', 0.06); },            // Sergio azzera
+  flop()   { this.tone([660, 520, 400, 300, 200, 120], 0.06, 'triangle', 0.08); this.noise(0.12, 300, 0.12, 0.36); }, // Aurelio crolla
+  whoosh() { this.noise(0.18, 900, 0.05); },
+  // Rumore breve (filtrato): per il "psst" di Ludo e i tonfi
+  noise(dur = 0.1, freq = 4000, vol = 0.05, delay = 0, type = 'bandpass') {
+    if (this.muted || !ctx) return;
+    try {
+      const len = Math.ceil(ctx.sampleRate * dur), buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+      const src = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+      src.buffer = buf; f.type = type; f.frequency.value = freq; g.gain.value = vol;
+      src.connect(f).connect(g).connect(ctx.destination); src.start(ctx.currentTime + delay);
+    } catch {}
+  },
+  psst() { this.noise(0.09, 5000, 0.05); this.noise(0.16, 6500, 0.05, 0.14); },
+
+  // Musica "russa": loop chiptune ORIGINALE (la minore armonica, ritmo da polka slava).
+  // Per sostituirla basta cambiare MELODIA / ACCORDI qui sotto (oppure caricare un file nello stesso punto).
+  musicStart() {
+    if (this.muted || !ctx || this._mus) return;
+    const m = this._mus = { step: 0, next: ctx.currentTime + 0.06, boostUntil: 0, vol: 1 };
+    m.timer = setInterval(() => this._musicTick(), 25);
+  },
+  musicStop() { if (this._mus) { clearInterval(this._mus.timer); this._mus = null; } },
+  musicBoost(ms = 2500) { if (this._mus && ctx) this._mus.boostUntil = ctx.currentTime + ms / 1000; },
+  _musicTick() {
+    const m = this._mus;
+    if (!m || !ctx || this.muted) { this.musicStop(); return; }
+    while (m.next < ctx.currentTime + 0.12) {
+      const boost = m.next < m.boostUntil;
+      const eighth = 60 / (boost ? 172 : 152) / 2;
+      const i = m.step % MELODIA.length;
+      const note = MELODIA[i];
+      if (note) this._note(note, m.next, eighth * 0.9, 'square', boost ? 0.05 : 0.032);
+      // basso "oom-pah": fondamentale sui tempi forti, accordo sui deboli
+      const ch = ACCORDI[Math.floor(i / 8)][Math.floor((i % 8) / 4)];
+      if (i % 2 === 0) {
+        const low = (i % 4 === 0) ? ch[0] - 12 : ch[1];
+        this._note(low, m.next, eighth * 0.8, 'triangle', boost ? 0.09 : 0.07);
+      } else if (boost || i % 4 === 3) this._note(ch[2], m.next, eighth * 0.35, 'square', 0.014);
+      m.next += eighth; m.step++;
+    }
+  },
+  _note(midi, t, dur, type, vol) {
+    try {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = type; o.frequency.value = 440 * Math.pow(2, (midi - 69) / 12);
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + dur + 0.02);
+    } catch {}
+  }
 };
+
+// Melodia originale (note MIDI, 0 = pausa), 8 battute da 8 crome
+const MELODIA = [
+  69, 0, 72, 76, 81, 0, 76, 72,
+  74, 0, 77, 81, 80, 0, 76, 0,
+  77, 76, 74, 72, 71, 72, 74, 76,
+  69, 0, 76, 0, 69, 0, 0, 0,
+  72, 72, 71, 69, 68, 69, 71, 68,
+  64, 0, 68, 71, 76, 0, 74, 72,
+  74, 74, 72, 71, 72, 71, 69, 68,
+  69, 64, 69, 72, 69, 0, 0, 0
+];
+// Accordi per mezza battuta: [fondamentale, quinta, terza alta]
+const Am = [57, 52, 60], Dm = [62, 57, 65], E = [52, 59, 56];
+const ACCORDI = [[Am, Am], [Dm, E], [Dm, Dm], [Am, E], [Am, Am], [E, E], [Dm, E], [Am, Am]];

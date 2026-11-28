@@ -1,6 +1,6 @@
 import { W, H, txt, PLAYER_Y, FOG_R, save } from '../util.js';
 import { sfx } from '../sfx.js';
-import { FRIENDS, BOOSTERS, OBSTACLES, CRUTCHES, DONKEY, LEVEL, SPAWN_WEIGHTS, BOSS, MONTAGNA, NEBBIA, PORTAFOGLIO, KARAOKE, CHEERS } from '../data/characters.js';
+import { FRIENDS, BOOSTERS, OBSTACLES, CRUTCHES, DONKEY, LEVEL, SPAWN_WEIGHTS, BOSS, MONTAGNA, NEBBIA, PORTAFOGLIO, KARAOKE, CHEERS, SOLODIECI } from '../data/characters.js';
 
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
@@ -126,6 +126,7 @@ export class Level extends Phaser.Scene {
     if (this.effects.crutches) speed *= CRUTCHES.speed;
     if (this.effects.riding) speed *= DONKEY.rideSpeed;
     else if (this.effects.wide) speed *= DONKEY.wideSpeed;
+    if (this.effects.doms) speed *= 0.75;   // DOMS di Sergio: braccia a pezzi, si muove più lento
     if (this.effects.stuck) speed = 0;
     const step = speed * dt / 1000;
     if (this.keys?.left.isDown) p.x -= step;
@@ -180,7 +181,7 @@ export class Level extends Phaser.Scene {
   }
 
   tickEffects(dt) {
-    const labels = { riding: 'ASINO', wide: 'GAMBE LARGHE', speed: 'TURBO', double: 'x2', invincible: 'INVINCIBILE', padel: 'PADEL', karaoke: 'KARAOKE', stuck: 'SUL DIVANO', sbronza: 'SBRONZA', crutches: 'STAMPELLE', ski: 'SCI-BLASTER', fan: 'VENTILATORE', fog: 'NEBBIA' };
+    const labels = { riding: 'ASINO', wide: 'GAMBE LARGHE', speed: 'TURBO', double: 'x2', invincible: 'INVINCIBILE', padel: 'PADEL', karaoke: 'KARAOKE', stuck: 'SUL DIVANO', sbronza: 'SBRONZA', crutches: 'STAMPELLE', ski: 'SCI-BLASTER', fan: 'VENTILATORE', fog: 'NEBBIA', doms: 'DOMS' };
     const active = [];
     for (const k of Object.keys(this.effects)) {
       this.effects[k] -= dt;
@@ -267,7 +268,7 @@ export class Level extends Phaser.Scene {
 
   // ---------- contatti ----------
   onTouch(it) {
-    if (this.frozen || this.ended || !it.active || it.reflected) return;
+    if (this.frozen || this.ended || !it.active || it.reflected || it.bounced) return;
     const k = it.kind;
 
     if (OBSTACLES[k]) {
@@ -296,6 +297,11 @@ export class Level extends Phaser.Scene {
     }
 
     if (BOOSTERS[k]) {
+      if (this.effects.doms) { // DOMS: non riesce a prendere cibo e drink, gli rimbalzano via
+        it.bounced = true; it.setVelocity(Phaser.Math.Between(-160, 160), -260);
+        if (!this.nopuedoMs || this.elapsed > this.nopuedoMs) { this.nopuedoMs = this.elapsed + 1500; this.floatText(this.player.x, this.player.y - 40, 'NO PUEDO COMER', '#ff9ecb'); }
+        return;
+      }
       const b = BOOSTERS[k];
       this.effects[b.effect] = b.ms;
       if (b.effect === 'padel' || b.effect === 'invincible' || b.effect === 'karaoke') delete this.effects.stuck;
@@ -409,6 +415,15 @@ export class Level extends Phaser.Scene {
       } else {
         this.effects.sbronza = CHEERS.sbronzaMs;
         this.floatText(p.x, p.y - 50, 'SERATA INFINITA...', '#ff9ecb');
+      }
+    } else if (res.mini === 'sergio') {
+      if (res.win) {
+        this.addBonus(SOLODIECI.reward.points);
+        this.effects.doms = SOLODIECI.reward.domsMs;
+        this.floatText(p.x, p.y - 50, 'SOLO UN PO\' DI DOMS', '#f4d03f');
+      } else {
+        this.effects.doms = SOLODIECI.domsMs;
+        this.floatText(p.x, p.y - 50, 'DOMS MORTALI...', '#ff9ecb');
       }
     } else if (res.mini === 'antonio') {
       if (res.win) {
