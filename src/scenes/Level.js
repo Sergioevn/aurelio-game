@@ -10,7 +10,7 @@ export class Level extends Phaser.Scene {
   create() {
     this.elapsed = 0; this.distance = 0; this.bonus = 0; this.lives = 3;
     this.effects = {}; this.hurtMs = 0; this.spawnMs = 600;
-    this.friendsFound = []; this.beaten = []; this.nextFriendAt = 9000;
+    this.friendsFound = []; this.beaten = []; this.nextFriendAt = 9000; this.lastFriend = null;
     this.boss = null; this.nextBossAt = BOSS.firstAt;
     this.frozen = false; this.ended = false;
     this.camparino = false; // diventa true solo dopo aver battuto Antonio in QUESTA partita: spritz -> camparini
@@ -257,8 +257,10 @@ export class Level extends Phaser.Scene {
   }
 
   spawnFriend(fall) {
-    const left = Object.keys(FRIENDS).filter(k => !this.beaten.includes(k));
+    let left = Object.keys(FRIENDS).filter(k => !this.beaten.includes(k));
     if (!left.length) return;
+    // finché restano almeno 2 amici da battere, non torna quello appena preso
+    if (left.length >= 2) left = left.filter(k => k !== this.lastFriend);
     const key = pick(left);
     const it = this.items.create(Phaser.Math.Between(50, W - 50), -24, key).setScale(2.2).setDepth(3);
     it.kind = 'friend'; it.friend = key;
@@ -313,7 +315,7 @@ export class Level extends Phaser.Scene {
     }
 
     if (k === 'friend') {
-      const f = it.friend; it.destroy();
+      const f = it.friend; it.destroy(); this.lastFriend = f;
       if (!this.friendsFound.includes(f)) this.friendsFound.push(f);
       this.addBonus(100); sfx.friend();
       if (FRIENDS[f].scene) this.startMini(f);

@@ -93,14 +93,15 @@ export const MONTAGNA = {
 
 // Mini-gioco Nebbia (Lollo): un ladro ruba il telefono ad Aurelio nel fumo
 export const NEBBIA = {
-  durataMs: 30000,       // tempo per ritrovare il ladro
+  durataMs: 38000,       // tempo per ritrovare il telefono
   luce: 54,              // raggio di visibilità attorno ad Aurelio (px)
   luceSiga: 36,          // raggio quando ti prende un anello di fumo
   sigaMs: 3000,
   ventoEvery: 7000,      // ogni quanto una folata dirada il fumo
   stealLine: '¡MI MÓVIL!',
   phoneMs: 1600,         // quanto resta visibile il telefono quando ricompare
-  grabsToWin: 3,         // il telefono scivola di mano: va preso 3 volte
+  grabsToWin: 4,         // il telefono scivola di mano: va preso 4 volte (fase 1 più lunga)
+  primoSquilloMs: 2600,  // attesa prima del primo squillo
   phoneSlide: [70, 120], // il telefono che vibra scivola di lato (px/s)
   ringMs: 700,           // lo squillo avvisa poco prima che il telefono compaia
   // Lollo insulta il ladro (censurato, stile fumetto)
@@ -135,6 +136,7 @@ export const QUAD = {
   // dopo la siga (Lollo è zen): la strada si allarga e vanno superati Antonio e Francesco,
   // sullo stesso quad, lentissimi e dritti. Se li tamponi Lollo perde la siga: perso.
   sorpasso: { velLoro: 70, distanza: 210, hitX: 34, hitY: 40 },
+  sorpassoLine: 'FIGA, I PUGLIESI NON\nSANNO MICA GUIDARE',   // Lollo, mentre li superate
   zenWin: 'LOLLO È ZEN.\nTORNATE A CASA\nTRANQUILLI',
   zenLose: 'LOLLO NON È ZEN.\nRECUPERA TUTTE\nLE SIGA A VALLE.',
   lineaBuca: "C'È UNA BUCA!!"
@@ -143,7 +145,8 @@ export const QUAD = {
 // Mini-gioco Portafoglio (Antonio): fase 1 shopping, fase 2 in barca
 export const PORTAFOGLIO = {
   shopMs: 20000,          // durata fase 1
-  soldi: 400,             // soldi iniziali di Antonio (euro)
+  soldi: 2000,            // soldi iniziali di Antonio (euro)
+  affitto: 750,           // i soldi dell'affitto: se Antonio scende sotto, hai perso (margine = 1250€, ~11 cavolate in media)
   // cavolate che cadono: prezzo e velocità di caduta
   cavolate: {
     orologio: { prezzo: 150, vel: 105, label: 'OROLOGIO!' },

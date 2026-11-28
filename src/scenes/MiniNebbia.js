@@ -132,9 +132,9 @@ export class MiniNebbia extends Phaser.Scene {
   startHunt() {
     this.phase = 'caccia'; this.elapsed = 0;
     this.spawnMs = 900; this.windMs = N.ventoEvery; this.insultMs = 3500;
-    this.ph = { state: 'wait', ms: 1600 };
+    this.ph = { state: 'wait', ms: N.primoSquilloMs };
     this.grabs = 0; this.updateGrabs();
-    const hint = txt(this, W / 2, PLAYER_Y - 80, 'QUANDO SQUILLA, IL TELEFONO\nRICOMPARE DA QUELLA PARTE.\nPRENDILO 3 VOLTE: SCIVOLA!\nEVITA LE NOTE DEL TRIBUNALE!', 7, '#ffffff').setDepth(25);
+    const hint = txt(this, W / 2, PLAYER_Y - 80, 'QUANDO SQUILLA, IL TELEFONO\nRICOMPARE DA QUELLA PARTE.\nPRENDILO ' + N.grabsToWin + ' VOLTE: SCIVOLA!\nEVITA LE NOTE DEL TRIBUNALE!', 7, '#ffffff').setDepth(25);
     this.tweens.add({ targets: hint, alpha: 0, delay: 3400, duration: 400, onComplete: () => hint.destroy() });
   }
 
@@ -297,7 +297,7 @@ export class MiniNebbia extends Phaser.Scene {
   updateGrabs() {
     if (!this.grabIcons) {
       this.grabIcons = [];
-      for (let i = 0; i < N.grabsToWin; i++) this.grabIcons.push(this.add.image(W / 2 - 14 + i * 14, 12, 'telefono').setDepth(21));
+      for (let i = 0; i < N.grabsToWin; i++) this.grabIcons.push(this.add.image(W / 2 - (N.grabsToWin - 1) * 7 + i * 14, 12, 'telefono').setDepth(21));
     }
     this.grabIcons.forEach((g, i) => { if (i < this.grabs) g.clearTint().setAlpha(1); else g.setTint(0x333333).setAlpha(0.7); });
   }
@@ -507,7 +507,7 @@ export class MiniNebbia extends Phaser.Scene {
   // ---------- ostacolo finale: Lollo è zen, la strada si allarga, Antonio e Francesco lentissimi ----------
   startSorpasso() {
     const S = Q.sorpasso;
-    this.phase = 'sorpasso'; this.zen = true; this.calma = 100;
+    this.phase = 'sorpasso'; this.zen = true; this.calma = 100; this.pugliesi = false;
     this.barFill.setScale(1, 1); this.barFill.fillColor = 0x3a8a3a; this.barSiga.setTexture('siga_accesa_b');
     this.obstacles.forEach(o => o.destroy()); this.obstacles = [];
     this.qSmoke.start(); this.qSiga.setVisible(true);   // Lollo continua a fumare tranquillo
@@ -533,6 +533,7 @@ export class MiniNebbia extends Phaser.Scene {
     c.x += Math.sin(this.elapsed / 500) * 4 * s;   // traballano appena
     c.list[0].y = Math.sin(this.elapsed / 60) * 0.6;
     if (Math.abs(c.x - q.x) < S.hitX && Math.abs(c.y - q.y) < S.hitY) { this.tamponati(); return; }
+    if (!this.pugliesi && c.y > q.y - 30) { this.pugliesi = true; this.quadSay(Q.sorpassoLine, 2200); }
     if (c.y > q.y + S.hitY + 10) { this.quadWin(); }
   }
 
@@ -545,11 +546,12 @@ export class MiniNebbia extends Phaser.Scene {
     this.quadLose('TAMPONATI!', true);
   }
 
-  quadSay(line) {
+  quadSay(line, hold = 1300) {
     if (this.sayTxt) this.sayTxt.destroy();
-    const b = txt(this, Phaser.Math.Clamp(this.quad.x, 70, W - 80), this.quad.y + 52, line, 7, '#ff9ecb').setDepth(22);
+    const b = txt(this, this.quad.x, this.quad.y + 52, line, 7, '#ff9ecb').setDepth(22);
+    b.x = Phaser.Math.Clamp(this.quad.x, Math.max(70, b.width / 2 + 4), Math.min(W - 80, W - 30 - b.width / 2));   // resta dentro lo schermo (e lontano dalla barra)
     this.sayTxt = b;
-    this.tweens.add({ targets: b, alpha: 0, delay: 1300, duration: 300, onComplete: () => b.destroy() });
+    this.tweens.add({ targets: b, alpha: 0, delay: hold, duration: 300, onComplete: () => b.destroy() });
   }
 
   stopQuad() {
@@ -562,7 +564,7 @@ export class MiniNebbia extends Phaser.Scene {
     this.stopQuad(); sfx.win();
     this.tweens.add({ targets: this.quad, angle: 0, duration: 300 });
     this.floatText(this.quad.x, this.quad.y - 60, 'SORPASSO!', '#f4d03f');
-    this.time.delayedCall(1200, () => this.lolloSays(FRIENDS.lollo.winLine, () => this.result(true)));
+    this.time.delayedCall(2200, () => this.lolloSays(FRIENDS.lollo.winLine, () => this.result(true)));
   }
 
   quadLose(why, quiet = false) {

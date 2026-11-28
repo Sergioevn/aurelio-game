@@ -1,7 +1,8 @@
 // Mini-gioco di Antonio: IL PORTAFOGLIO
 // Fase 1 (shopping): dall'alto cadono cavolate (orologi, sigari, occhiali, offerte lampo).
 // Antonio corre a comprarle: Aurelio deve arrivarci prima di lui. Ogni acquisto svuota il portafoglio.
-// Se a fine tempo ci sono ancora soldi... si va in barca.
+// Antonio ha i soldi dell'affitto (P.affitto) più un margine: se ne spende più del margine, hai perso.
+// Se a fine tempo l'affitto è salvo... si va in barca.
 // Fase 2 (barca): CAMERIERE DI BORDO - Un Camparino per Antonio. Barca vista di lato: tieni premuto
 // e Aurelio cammina sul ponte verso Antonio; prima di ogni onda la prua si alza, se cammina durante
 // il rollio il Camparino trabocca. Antonio si allontana tre volte (Macarena, Saint Barth, poppa).
@@ -54,12 +55,16 @@ export class MiniPortafoglio extends Phaser.Scene {
     this.walletIcon = this.add.image(W - 70, 12, 'portafoglio').setDepth(21);
     this.info = txt(this, W - 8, 12, '', 7, '#ffffff', 0).setOrigin(1, 0.5).setDepth(21);
     this.timeBar = this.add.rectangle(0, 25, W, 3, 0xf08a24).setOrigin(0, 0.5).setDepth(21);
+    // seconda riga: i soldi dell'affitto (intoccabili) e quanto può ancora spendere
+    this.affittoTxt = txt(this, 8, 36, 'AFFITTO ' + P.affitto + '€', 6, '#bfe3f0', 0).setOrigin(0, 0.5).setDepth(21);
+    this.margineTxt = txt(this, W - 8, 36, '', 6, '#ffffff', 0).setOrigin(1, 0.5).setDepth(21);
     this.updateWallet();
 
     this.intro();
   }
 
   intro() {
+    if (!this.startBarca) { this.introShop(); return; }
     const f = FRIENDS.antonio;
     const g = this.add.container(0, 0).setDepth(40);
     g.add(this.add.rectangle(W / 2, H / 2, W - 30, 240, 0x1a1423, 0.95).setStrokeStyle(3, 0xf4d03f));
@@ -69,6 +74,32 @@ export class MiniPortafoglio extends Phaser.Scene {
     g.add(txt(this, W / 2, H / 2 + 20, '"' + f.line + '"', 8, '#ffffff'));
     g.add(txt(this, W / 2, H / 2 + 52, this.startBarca ? 'PORTA UN CAMPARINO\nAD ANTONIO!' : 'PRENDI LE CAVOLATE\nPRIMA DI LUI, O SPENDE\nTUTTI I SOLDI!', 7, '#bfe3f0'));
     const go = txt(this, W / 2, H / 2 + 94, 'TOCCA PER PARTIRE', 7, '#f08a24');
+    g.add(go);
+    this.tweens.add({ targets: go, alpha: 0.2, duration: 450, yoyo: true, repeat: -1 });
+    this.introBox = g;
+    this.time.delayedCall(500, () => { this.canStart = true; });
+  }
+
+  // Spiegazione della fase shopping, con la leggenda delle cavolate dalla più cara alla meno cara
+  introShop() {
+    const f = FRIENDS.antonio;
+    const g = this.add.container(0, 0).setDepth(40);
+    const top = H / 2 - 196;
+    g.add(this.add.rectangle(W / 2, H / 2, W - 24, 400, 0x1a1423, 0.95).setStrokeStyle(3, 0xf4d03f));
+    g.add(this.add.image(W / 2, top + 34, 'antonio').setScale(3));
+    g.add(this.add.image(W / 2 + 24, top + 46, 'sigaro').setScale(1.5));
+    g.add(txt(this, W / 2, top + 76, f.name, 12, '#f4d03f'));
+    g.add(txt(this, W / 2, top + 96, '"' + f.line + '"', 8, '#ffffff'));
+    g.add(txt(this, W / 2, top + 132, 'HA ' + P.soldi + '€, MA ' + P.affitto + '€\nSONO I SOLDI DELL\'AFFITTO!\nPUO\' SPENDERE AL MASSIMO ' + (P.soldi - P.affitto) + '€.\nPRENDI LE CAVOLATE PRIMA DI LUI!', 7, '#bfe3f0'));
+    g.add(txt(this, W / 2, top + 178, "DALLA PIU' CARA:", 7, '#f08a24'));
+    const lista = Object.entries(P.cavolate).sort((a, b) => b[1].prezzo - a[1].prezzo);
+    lista.forEach(([k, c], i) => {
+      const y = top + 200 + i * 24;
+      g.add(this.add.image(W / 2 - 96, y, k).setScale(1.5));
+      g.add(txt(this, W / 2 - 80, y, c.label.replace('!', ''), 7, '#ffffff', 0).setOrigin(0, 0.5));
+      g.add(txt(this, W / 2 + 106, y, c.prezzo + '€', 7, '#f4d03f', 0).setOrigin(1, 0.5));
+    });
+    const go = txt(this, W / 2, top + 200 + lista.length * 24 + 14, 'TOCCA PER PARTIRE', 7, '#f08a24');
     g.add(go);
     this.tweens.add({ targets: go, alpha: 0.2, duration: 450, yoyo: true, repeat: -1 });
     this.introBox = g;
@@ -186,15 +217,21 @@ export class MiniPortafoglio extends Phaser.Scene {
   bought(o) {
     o.done = true; sfx.coin();
     const c = P.cavolate[o.kind];
-    this.soldi = Math.max(0, this.soldi - c.prezzo);
+    this.soldi -= c.prezzo;
     this.updateWallet();
     this.tweens.add({ targets: this.walletIcon, scale: 1.6, duration: 120, yoyo: true });
     this.floatText(this.antonio.x, this.antonio.y - 40, '-' + c.prezzo + '€ ' + c.label, '#ff6b5b');
     this.tweens.add({ targets: o, x: this.antonio.x, y: this.antonio.y, scale: 0.5, alpha: 0, duration: 200, onComplete: () => o.destroy() });
-    if (this.soldi <= 0) this.shopLost();
+    if (this.soldi < P.affitto) this.shopLost();
   }
 
-  updateWallet() { this.info.setText(this.soldi + '€'); this.info.setColor(this.soldi <= 150 ? '#ff6b5b' : '#ffffff'); }
+  updateWallet() {
+    const margine = this.soldi - P.affitto;
+    this.info.setText(Math.max(0, this.soldi) + '€');
+    this.margineTxt.setText("PUO' SPENDERE " + Math.max(0, margine) + '€');
+    const col = margine <= 200 ? '#ff6b5b' : '#ffffff';
+    this.info.setColor(col); this.margineTxt.setColor(col);
+  }
 
   antonioSay(line, hold = 700) {
     if (this.bubbleObj) this.bubbleObj.destroy();
@@ -207,14 +244,14 @@ export class MiniPortafoglio extends Phaser.Scene {
 
   shopLost() {
     this.phase = 'done'; sfx.over(); this.clearItems();
-    this.loseReason = 'PORTAFOGLIO VUOTO';
-    this.floatText(W / 2, PLAYER_Y - 90, 'PORTAFOGLIO VUOTO!', '#ff6b5b');
+    this.loseReason = 'AFFITTO SPESO';
+    this.floatText(W / 2, PLAYER_Y - 90, 'ADDIO AFFITTO!', '#ff6b5b');
     this.time.delayedCall(1200, () => this.antonioSays(FRIENDS.antonio.loseLine, () => this.result(false)));
   }
 
   shopDone() {
     this.phase = 'sbarco'; sfx.win(); this.clearItems(); this.targetX = null;
-    const t1 = txt(this, W / 2, H / 2 - 60, 'SOLDI SALVATI: ' + this.soldi + '€', 9, '#f4d03f').setDepth(30);
+    const t1 = txt(this, W / 2, H / 2 - 66, "AFFITTO SALVO!\nGLI AVANZANO " + (this.soldi - P.affitto) + '€', 9, '#f4d03f').setDepth(30);
     const t2 = txt(this, W / 2, H / 2 - 30, 'E ORA... IN BARCA!', 9, '#ffffff').setDepth(30).setAlpha(0);
     this.tweens.add({ targets: t2, alpha: 1, delay: 900, duration: 300 });
     this.time.delayedCall(2300, () => {
@@ -242,7 +279,7 @@ export class MiniPortafoglio extends Phaser.Scene {
     this.bubbles = {}; this.dropMs = 0;
     this.bg.setVisible(false);
     this.player.setVisible(false); this.antonio.setVisible(false);
-    this.title.setText('CAMERIERE DI BORDO'); this.walletIcon.setVisible(false); this.info.setText(''); this.timeBar.setVisible(false);
+    this.title.setText('CAMERIERE DI BORDO'); this.walletIcon.setVisible(false); this.info.setText(''); this.affittoTxt.setVisible(false); this.margineTxt.setVisible(false); this.timeBar.setVisible(false);
 
     this.drawSeaBack();
     // la barca e chi ci sta sopra: "rig" ruota (beccheggio), "world" scorre con l'inquadratura
