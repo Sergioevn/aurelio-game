@@ -53,6 +53,7 @@ export class Menu extends Phaser.Scene {
     if (mini === 'quad') { this.scene.start('MiniNebbia', { standalone: true, quad: true }); return; }
     if (mini === 'portafoglio') { this.scene.start('MiniPortafoglio', { standalone: true }); return; }
     if (mini === 'barca') { this.scene.start('MiniPortafoglio', { standalone: true, barca: true }); return; }
+    if (mini === 'cheers') { this.scene.start('MiniCheers', { standalone: true }); return; }
     this.scene.start('Level');
   }
 

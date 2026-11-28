@@ -7,6 +7,7 @@ import { MiniMontagna } from './scenes/MiniMontagna.js';
 import { Finale } from './scenes/Finale.js';
 import { MiniNebbia } from './scenes/MiniNebbia.js';
 import { MiniPortafoglio } from './scenes/MiniPortafoglio.js';
+import { MiniCheers } from './scenes/MiniCheers.js';
 
 // Installazione PWA (Android/Chrome)
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); window.__installPrompt = e; });
@@ -26,7 +27,7 @@ const start = () => window.game = new Phaser.Game({
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   physics: { default: 'arcade', arcade: { debug: false } },
   input: { activePointers: 2 },
-  scene: [Boot, Menu, Level, GameOver, MiniMontagna, MiniNebbia, MiniPortafoglio, Finale]
+  scene: [Boot, Menu, Level, GameOver, MiniMontagna, MiniNebbia, MiniPortafoglio, MiniCheers, Finale]
 });
 
 document.fonts.load(`8px "${FONT}"`).then(start, start);

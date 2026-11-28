@@ -1,6 +1,6 @@
 import { W, H, txt, PLAYER_Y, FOG_R, save } from '../util.js';
 import { sfx } from '../sfx.js';
-import { FRIENDS, BOOSTERS, OBSTACLES, CRUTCHES, DONKEY, LEVEL, SPAWN_WEIGHTS, BOSS, MONTAGNA, NEBBIA, PORTAFOGLIO, KARAOKE } from '../data/characters.js';
+import { FRIENDS, BOOSTERS, OBSTACLES, CRUTCHES, DONKEY, LEVEL, SPAWN_WEIGHTS, BOSS, MONTAGNA, NEBBIA, PORTAFOGLIO, KARAOKE, CHEERS } from '../data/characters.js';
 
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
@@ -91,6 +91,9 @@ export class Level extends Phaser.Scene {
     this.updateFanFog(dt);
     this.updateKaraoke(dt);
     this.updateAuras();
+    // Sbronza (malus di Francesco): lo schermo ondeggia
+    const sb = this.effects.sbronza ? Math.min(1, this.effects.sbronza / 800) : 0;
+    this.cameras.main.setRotation(Math.sin(this.elapsed / 500) * 0.045 * sb);
 
     // Comparsa oggetti
     this.spawnMs -= dt;
@@ -132,6 +135,7 @@ export class Level extends Phaser.Scene {
       p.x += Math.sign(dx) * Math.min(Math.abs(dx), step);
     }
     if (this.effects.riding) p.x += Math.sin(this.elapsed / 300) * 60 * dt / 1000; // l'asino va un po' dove vuole lui
+    if (this.effects.sbronza) p.x += Math.sin(this.elapsed / 420) * 90 * dt / 1000;  // sbronzo: sbanda da solo
     p.x = Phaser.Math.Clamp(p.x, 34, W - 34);
 
     // Gambe larghe dopo l'asino: occupa più spazio
@@ -176,7 +180,7 @@ export class Level extends Phaser.Scene {
   }
 
   tickEffects(dt) {
-    const labels = { riding: 'ASINO', wide: 'GAMBE LARGHE', speed: 'TURBO', double: 'x2', invincible: 'INVINCIBILE', padel: 'PADEL', karaoke: 'KARAOKE', stuck: 'SUL DIVANO', crutches: 'STAMPELLE', ski: 'SCI-BLASTER', fan: 'VENTILATORE', fog: 'NEBBIA' };
+    const labels = { riding: 'ASINO', wide: 'GAMBE LARGHE', speed: 'TURBO', double: 'x2', invincible: 'INVINCIBILE', padel: 'PADEL', karaoke: 'KARAOKE', stuck: 'SUL DIVANO', sbronza: 'SBRONZA', crutches: 'STAMPELLE', ski: 'SCI-BLASTER', fan: 'VENTILATORE', fog: 'NEBBIA' };
     const active = [];
     for (const k of Object.keys(this.effects)) {
       this.effects[k] -= dt;
@@ -396,6 +400,15 @@ export class Level extends Phaser.Scene {
       } else {
         this.effects.fog = NEBBIA.fogMs;
         this.floatText(p.x, p.y - 50, 'CHE NEBBIA...', '#c8b49a');
+      }
+    } else if (res.mini === 'francesco') {
+      if (res.win) {
+        this.addBonus(CHEERS.reward.points);
+        this.effects.speed = CHEERS.reward.fugaMs;
+        this.floatText(p.x, p.y - 50, 'FUGA!', '#f4d03f');
+      } else {
+        this.effects.sbronza = CHEERS.sbronzaMs;
+        this.floatText(p.x, p.y - 50, 'SERATA INFINITA...', '#ff9ecb');
       }
     } else if (res.mini === 'antonio') {
       if (res.win) {

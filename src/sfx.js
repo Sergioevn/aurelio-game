@@ -39,5 +39,24 @@ export const sfx = {
   splash() { this.tone([400, 300, 200, 140, 100], 0.05, 'sawtooth', 0.06); },
   sing()   { this.tone([392, 523, 659, 784, 659, 784], 0.08, 'triangle', 0.08); },
   wave()   { this.tone([140, 110], 0.05, 'sine', 0.05); },
-  over()   { this.tone([392, 330, 262, 196], 0.18, 'triangle', 0.08); }
+  over()   { this.tone([392, 330, 262, 196], 0.18, 'triangle', 0.08); },
+  cin()    { this.tone([2093, 2794], 0.06, 'triangle', 0.09); },
+  sip()    { this.tone([170, 130], 0.06, 'sine', 0.08); },
+  near()   { this.tone([660, 0, 660], 0.08, 'square', 0.05); },
+  order()  { this.tone([392, 370, 349, 262], 0.2, 'sawtooth', 0.05); },
+
+  // Rumore di sottofondo leggero (strada e pub): rumore filtrato in loop, rispetta il tasto audio
+  ambientStart(vol = 0.025) {
+    if (this.muted || !ctx || this._amb) return;
+    try {
+      const len = ctx.sampleRate * 2, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+      let last = 0;
+      for (let i = 0; i < len; i++) { last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02; d[i] = last * 3.5; }
+      const src = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+      src.buffer = buf; src.loop = true; f.type = 'lowpass'; f.frequency.value = 600; g.gain.value = vol;
+      src.connect(f).connect(g).connect(ctx.destination); src.start();
+      this._amb = src;
+    } catch {}
+  },
+  ambientStop() { try { this._amb?.stop(); } catch {} this._amb = null; }
 };

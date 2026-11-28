@@ -4,7 +4,7 @@
 export const FRIENDS = {
   javier:    { name: 'JAVIER',    game: 'MONTAGNA',     line: 'ANDIAMO IN MONTAGNA', scene: 'MiniMontagna',
                endLine: '¡A LA CAMA A LAS 21:00,\nQUE MAÑANA SE ESQUÍA\nOTRA VEZ!' },
-  francesco: { name: 'FRANCESCO', game: 'LA SERATA',    line: 'Un\'altra birra?' },
+  francesco: { name: 'FRANCESCO', game: "L'ULTIMA PRIMA CHE ARRIVINO", line: 'Un\'altra birra?', scene: 'MiniCheers' },
   sergio:    { name: 'SERGIO',    game: 'CALISTHENICS', line: 'Solo 3 serie, giuro' },
   antonio:   { name: 'ANTONIO',   game: 'IL PORTAFOGLIO', line: 'GUARDA CHE AFFARE!', scene: 'MiniPortafoglio',
                winLine: 'CAMPARINO?', loseLine: 'SGRADEVOLE' },
@@ -154,4 +154,51 @@ export const PORTAFOGLIO = {
   balloLines: ['STO DA DIO!!', 'HY HAA!'],
   reward: { points: 300 },       // vinto: +300 e camparini al posto degli spritz per sempre
   losePoints: 150                // perso: Aurelio paga il conto (-150 punti)
+};
+
+// Mini-gioco Cheers (Francesco): "L'ultima prima che arrivino".
+// Fuori dal Cheers Pub: Aurelio deve finire la pinta brindando con Francesco
+// prima che arrivino Giorgio e Caiman (sono loro il conto alla rovescia).
+export const CHEERS = {
+  arriveMs: 30000,        // dopo quanto Giorgio e Caiman arrivano al tavolo
+  penaltyPresto: 1200,    // premi troppo presto ("AURI, FAMMI FINIRE."): arrivano prima di tanto (ms)
+  penaltyAscolto: 1500,   // tieni premuto dopo il sorso ("MI STAI ASCOLTANDO?")
+  cooldownPresto: 700,    // tra due penalità "troppo presto" (contro chi tocca a raffica)
+  graziaMs: 300,          // tolleranza per lasciare quando Francesco abbassa il bicchiere
+  abbassaMs: 400,         // Francesco abbassa il bicchiere dopo aver bevuto
+  // finestre del "cin" rispetto al contatto dei bicchieri (ms prima / dopo)
+  finestra:  { perfetto: 90,  primaBuono: 220, dopoBuono: 180 },
+  tutorial:  { perfetto: 140, primaBuono: 380, dopoBuono: 300 },  // primo brindisi, più generoso
+  // quanta birra (su 100) si beve tenendo premuto per tutto il sorso; il brindisi doppio vale metà
+  sorso: { perfetto: 35, buono: 27 },
+  // la sequenza dei brindisi (fissa, niente casualità)
+  //   talk = Francesco parla; fake = alza il bicchiere in verticale (FINTA);
+  //   toast = brindisi vero: reach = il bicchiere va in orizzontale verso Aurelio, drink = sorso
+  beats: [
+    { talk: 3200, say: "HO CONOSCIUTO UNA TIPA\nL'ALTRO GIORNO..." },
+    { toast: true, reach: 900, drink: 2200, tutorial: true },
+    { talk: 1500, say: 'DOVREMMO FARE\nUN PAINTBALL' },
+    { fake: 1400 },
+    { talk: 900 },
+    { toast: true, reach: 650, drink: 1800 },
+    { talk: 1800, say: 'ERA IL CUVVY!' },
+    { toast: true, reach: 600, drink: 900, half: true, say: 'A JAVI!' },
+    { talk: 700, say: '...E A LOLLO,\nSENNÒ SI OFFENDE!' },
+    { toast: true, reach: 500, drink: 1000, half: true },
+    { talk: 1600, say: 'DAI ANDIAMO AL MOSSO,\nSTASERA' },
+    { toast: true, reach: 450, drink: 1700 }
+  ],
+  // dopo l'ultimo brindisi Francesco continua a chiacchierare (niente più brindisi)
+  filler: [
+    { talk: 1400, say: 'JAUVI!' },
+    { fake: 1200 },
+    { talk: 1600, say: "HO CONOSCIUTO UNA TIPA\nL'ALTRO GIORNO..." },
+    { fake: 1200 }
+  ],
+  prestoLine: 'AURI, FAMMI FINIRE.',
+  ascoltoLine: 'AURI, MA MI\nSTAI ASCOLTANDO?',
+  winLines: ['MA AURELIO?', 'ERA QUI\nUN ATTIMO FA.'],
+  loseLines: ['AH PERFETTO,\nSTAI ANCORA BEVENDO!', 'QUATTRO MEDIE!'],
+  reward: { points: 300, fugaMs: 6000 },  // vinto: +300 e turbo di fuga nel livello
+  sbronzaMs: 8000                          // perso: sbronza nel livello (schermo che ondeggia, comandi imprecisi)
 };
