@@ -48,8 +48,8 @@ export const CRUTCHES = { ms: 6000, speed: 0.5, label: 'IN STAMPELLE...' };
 
 // Probabilità di comparsa (pesi relativi) nel livello principale
 export const SPAWN_WEIGHTS = {
-  pizza: 26, roccia: 26, asino: 3,
-  spritz: 7, birra: 7, racchetta: 3, microfono: 3
+  pizza: 26, roccia: 26, asino: 2,
+  spritz: 7, birra: 7, racchetta: 1.5, microfono: 1.5 // super-poteri dimezzati (28/11)
 };
 
 // Maggipinto: il boss che non esce mai di casa
