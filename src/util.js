@@ -1,3 +1,6 @@
+// Versione dell'app mostrata nel menu. A ogni rilascio aggiornala INSIEME a CACHE_VERSION in sw.js.
+export const VERSION = 'v2.1';
+
 import { PALETTE, SPRITES } from './data/sprites.js';
 
 export const W = 270;

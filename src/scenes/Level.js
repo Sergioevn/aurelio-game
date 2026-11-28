@@ -13,7 +13,7 @@ export class Level extends Phaser.Scene {
     this.friendsFound = []; this.beaten = []; this.nextFriendAt = 9000;
     this.boss = null; this.nextBossAt = BOSS.firstAt;
     this.frozen = false; this.ended = false;
-    this.camparino = save.get('camparino', false); // battuto Antonio una volta: spritz -> camparini per sempre
+    this.camparino = false; // diventa true solo dopo aver battuto Antonio in QUESTA partita: spritz -> camparini
 
     this.bg = this.add.tileSprite(W / 2, H / 2, W, H, 'road');
     this.items = this.physics.add.group();
@@ -400,7 +400,7 @@ export class Level extends Phaser.Scene {
     } else if (res.mini === 'antonio') {
       if (res.win) {
         this.addBonus(PORTAFOGLIO.reward.points);
-        this.camparino = true; save.set('camparino', true);
+        this.camparino = true;
         for (const it of this.items.getChildren()) if (it.kind === 'spritz') it.setTexture('camparino');
         this.floatText(p.x, p.y - 50, 'CAMPARINO?', '#ff6b5b');
       } else {

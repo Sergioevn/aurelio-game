@@ -1,6 +1,7 @@
 // Service worker: salva il gioco sul telefono così funziona anche offline.
-// IMPORTANTE: incrementa CACHE_VERSION a ogni rilascio, così i telefoni scaricano la versione nuova.
-const CACHE_VERSION = 'v15';
+// IMPORTANTE: a ogni rilascio aggiorna CACHE_VERSION (così i telefoni scaricano la versione nuova)
+// e mettila uguale a VERSION in src/util.js (è quella che si vede nel menu).
+const CACHE_VERSION = 'v2.1';
 const CACHE = 'aurelio-' + CACHE_VERSION;
 const FILES = [
   './', './index.html', './manifest.webmanifest',

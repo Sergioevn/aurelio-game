@@ -1,4 +1,4 @@
-import { W, H, txt, save } from '../util.js';
+import { W, H, txt, save, VERSION } from '../util.js';
 import { sfx } from '../sfx.js';
 import { FRIENDS } from '../data/characters.js';
 
@@ -27,7 +27,7 @@ export class Menu extends Phaser.Scene {
     this.tweens.add({ targets: play, alpha: 0.2, duration: 500, yoyo: true, repeat: -1 });
 
     txt(this, W / 2, 360, 'RECORD: ' + save.get('best', 0), 8, '#bfe3f0');
-    if (save.get('camparino', false)) this.add.image(W / 2 + 84, 358, 'camparino').setScale(1.5); // premio di Antonio
+    txt(this, W - 22, H - 10, VERSION, 7, '#c8b49a'); // versione: serve per capire se il telefono ha l'ultima (da togliere al rilascio)
 
     // Audio on/off
     const audio = txt(this, W / 2, 392, 'AUDIO: ' + (sfx.muted ? 'NO' : 'SI'), 8, '#c8b49a')
