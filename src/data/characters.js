@@ -5,7 +5,7 @@ export const FRIENDS = {
   javier:    { name: 'JAVIER',    game: 'MONTAGNA',     line: 'ANDIAMO IN MONTAGNA', scene: 'MiniMontagna',
                endLine: '¡A LA CAMA A LAS 21:00,\nQUE MAÑANA SE ESQUÍA\nOTRA VEZ!' },
   francesco: { name: 'FRANCESCO', game: "L'ULTIMA PRIMA CHE ARRIVINO", line: 'Un\'altra birra?', scene: 'MiniCheers' },
-  sergio:    { name: 'SERGIO',    game: 'SOLO DIECI',   line: 'Solo 3 serie, giuro', scene: 'MiniSoloDieci' },
+  sergio:    { name: 'SERGIO',    game: 'SOLO SETTE',   line: 'Solo 3 serie, giuro', scene: 'MiniSoloDieci' },
   antonio:   { name: 'ANTONIO',   game: 'IL PORTAFOGLIO', line: 'GUARDA CHE AFFARE!', scene: 'MiniPortafoglio',
                winLine: 'CAMPARINO?', loseLine: 'SGRADEVOLE' },
   lollo:     { name: 'LOLLO',     game: 'LA NEBBIA',    line: 'SÀ', scene: 'MiniNebbia',
@@ -104,8 +104,12 @@ export const NEBBIA = {
   phoneSlide: [70, 120], // il telefono che vibra scivola di lato (px/s)
   ringMs: 700,           // lo squillo avvisa poco prima che il telefono compaia
   // Lollo insulta il ladro (censurato, stile fumetto)
-  insults: ['LADRO DI #@!%&!', 'TORNA QUI, $%&#@!', 'TI TROVO, BRUTTO ****!', 'MALEDETTO @#$%!', '%&#@ DI UN LADRO!',
-            'CHE COINCIDENZA', 'DI CHE COLORE ERA?'],
+  insults: ['LADRO DI #@!%&!', 'TORNA QUI, $%&#@!', 'TI TROVO, BRUTTO ****!', 'MALEDETTO @#$%!', '%&#@ DI UN LADRO!'],
+  // tre battute di fila, sempre in quest'ordine (una volta per partita, dopo il primo insulto)
+  colore: ['DI CHE COLORE ERA?', 'NON IL TELEFONO,\nOVVIAMENTE', 'MA CHE COINCIDENZA'],
+  // note di comparsa in tribunale nascoste nel fumo: se le prendi salti un turno del telefono
+  citazioneOgni: 4,      // una cosa che cade su tante è una citazione
+  citazioneLine: 'COMPARSA IN TRIBUNALE!\nSALTI UN TURNO',
   reward: { points: 300, fanMs: 8000 },   // se vince: ventilatore che soffia via pizze, rocce, asini e inviti
   fogMs: 8000                              // se perde: nebbia nel livello
 };
@@ -128,6 +132,11 @@ export const QUAD = {
   fumoMin: 65,            // se durante la siga la barra scende sotto, la siga cade
   ostacoloEvery: [1100, 1600],
   lineePanico: ['PIANO AURÉ!'],
+  // dopo la siga (Lollo è zen): la strada si allarga e vanno superati Antonio e Francesco,
+  // sullo stesso quad, lentissimi e dritti. Se li tamponi Lollo perde la siga: perso.
+  sorpasso: { velLoro: 70, distanza: 210, hitX: 34, hitY: 40 },
+  zenWin: 'LOLLO È ZEN.\nTORNATE A CASA\nTRANQUILLI',
+  zenLose: 'LOLLO NON È ZEN.\nRECUPERA TUTTE\nLE SIGA A VALLE.',
   lineaBuca: "C'È UNA BUCA!!"
 };
 
@@ -140,12 +149,14 @@ export const PORTAFOGLIO = {
     orologio: { prezzo: 150, vel: 105, label: 'OROLOGIO!' },
     sigaro:   { prezzo: 60,  vel: 115, label: 'SIGARO!' },
     occhiali: { prezzo: 90,  vel: 110, label: 'OCCHIALI!' },
-    offerta:  { prezzo: 200, vel: 170, label: 'OFFERTA LAMPO!' }   // rara e veloce
+    scarpe:   { prezzo: 120, vel: 108, label: 'SCARPE ELEGANTI!' },
+    polo:     { prezzo: 200, vel: 170, label: 'POLO MASSIMO DUTTI!' }   // rara e veloce
   },
-  pesi: { orologio: 3, sigaro: 4, occhiali: 3, offerta: 1 },
-  spawnEvery: [550, 800], // ogni quanto cade una cavolata (ms)
+  pesi: { orologio: 3, sigaro: 4, occhiali: 3, scarpe: 3, polo: 1 },
+  poloLine: 'LA NUOVA COLLEZIONE\nMASSIMO DUTTI!!',   // Antonio la urla quando cade la polo
+  spawnEvery: [430, 640], // ogni quanto cade una cavolata (ms) - più oggetti: meno chiaro dove va Antonio
   antonioSpeed: 145,      // Antonio corre verso le cavolate (Aurelio va a 230)
-  saveLines: ['SGRADEVOLE!', 'AVVOCATO', 'LORDI', 'MI CONSENTA'],  // quando Aurelio gliela soffia
+  saveLines: ['SGRADEVOLE!', 'AVVOCATO', 'BRUTTO GESTO', 'LORDI', 'MI CONSENTA', 'BRUTTISSIMO GESTO'],  // quando Aurelio gliela soffia
   // Fase 2: CAMERIERE DI BORDO. Aurelio porta un Camparino ad Antonio camminando sul ponte.
   // Tieni premuto = cammina; prima di ogni onda la prua si alza: se cammina durante il rollio, il Camparino trabocca.
   barca: {
@@ -177,41 +188,54 @@ export const PORTAFOGLIO = {
 // Fuori dal Cheers Pub: Aurelio deve finire la pinta brindando con Francesco
 // prima che arrivino Giorgio e Caiman (sono loro il conto alla rovescia).
 export const CHEERS = {
-  arriveMs: 30000,        // dopo quanto Giorgio e Caiman arrivano al tavolo
+  arriveMs: 40000,        // dopo quanto Giorgio e Caiman arrivano al tavolo
   penaltyPresto: 1200,    // premi troppo presto ("AURI, FAMMI FINIRE."): arrivano prima di tanto (ms)
   penaltyAscolto: 1500,   // tieni premuto dopo il sorso ("MI STAI ASCOLTANDO?")
   cooldownPresto: 700,    // tra due penalità "troppo presto" (contro chi tocca a raffica)
   graziaMs: 300,          // tolleranza per lasciare quando Francesco abbassa il bicchiere
   abbassaMs: 400,         // Francesco abbassa il bicchiere dopo aver bevuto
+  // PENALITÀ "BICCHIERE GIÙ": per tanto tempo Aurelio non può bere né brindare.
+  // Scatta se sbagli il cin (troppo presto, in ritardo o non premi proprio)
+  // e se lasci prima che Francesco abbia finito di bere.
+  bloccoMs: 2000,
   // finestre del "cin" rispetto al contatto dei bicchieri (ms prima / dopo)
   finestra:  { perfetto: 90,  primaBuono: 220, dopoBuono: 180 },
   tutorial:  { perfetto: 140, primaBuono: 380, dopoBuono: 300 },  // primo brindisi, più generoso
   // quanta birra (su 100) si beve tenendo premuto per tutto il sorso; il brindisi doppio vale metà
-  sorso: { perfetto: 35, buono: 27 },
+  sorso: { perfetto: 24, buono: 16 },
   // la sequenza dei brindisi (fissa, niente casualità)
   //   talk = Francesco parla; fake = alza il bicchiere in verticale (FINTA);
   //   toast = brindisi vero: reach = il bicchiere va in orizzontale verso Aurelio, drink = sorso
   beats: [
     { talk: 3200, say: "HO CONOSCIUTO UNA TIPA\nL'ALTRO GIORNO..." },
     { toast: true, reach: 900, drink: 2200, tutorial: true },
-    { talk: 1500, say: 'DOVREMMO FARE\nUN PAINTBALL' },
+    { talk: 2000, say: 'DOVREMMO FARE\nUN PAINTBALL' },
     { fake: 1400 },
-    { talk: 900 },
+    { talk: 1200 },
     { toast: true, reach: 650, drink: 1800 },
-    { talk: 1800, say: 'ERA IL CUVVY!' },
+    { talk: 2200, say: 'ERA IL CUVVY!' },
+    { fake: 1200 },
     { toast: true, reach: 600, drink: 900, half: true, say: 'A JAVI!' },
     { talk: 700, say: '...E A LOLLO,\nSENNÒ SI OFFENDE!' },
     { toast: true, reach: 500, drink: 1000, half: true },
-    { talk: 1600, say: 'DAI ANDIAMO AL MOSSO,\nSTASERA' },
-    { toast: true, reach: 450, drink: 1700 }
+    { talk: 2000, say: 'DAI ANDIAMO AL MOSSO,\nSTASERA' },
+    { toast: true, reach: 500, drink: 1600 },
+    { talk: 1800, say: 'JAUVI!' },
+    { fake: 1300 },
+    { talk: 800 },
+    { toast: true, reach: 450, drink: 1600 },
+    { talk: 1600, say: "HO CONOSCIUTO UNA TIPA\nL'ALTRO GIORNO..." },
+    { toast: true, reach: 450, drink: 1500 }
   ],
   // dopo l'ultimo brindisi Francesco continua a chiacchierare (niente più brindisi)
   filler: [
     { talk: 1400, say: 'JAUVI!' },
     { fake: 1200 },
-    { talk: 1600, say: "HO CONOSCIUTO UNA TIPA\nL'ALTRO GIORNO..." },
+    { talk: 1600, say: 'DOVREMMO FARE\nUN PAINTBALL' },
     { fake: 1200 }
   ],
+  mancatoLine: 'AURI?! IL CIN!',            // cin sbagliato (in ritardo o mai premuto) - provvisoria
+  metaLine: 'AURI, NON SI\nLASCIA A METÀ!', // lasci prima che Francesco finisca di bere - provvisoria
   prestoLine: 'AURI, FAMMI FINIRE.',
   ascoltoLine: 'AURI, MA MI\nSTAI ASCOLTANDO?',
   winLines: ['MA AURELIO?', 'ERA QUI\nUN ATTIMO FA.'],
@@ -224,8 +248,8 @@ export const CHEERS = {
 // ad Aurelio e ogni tanto si gira a controllare. Aurelio (tieni premuto = flessioni) deve farsi
 // contare 10 flessioni facendone il meno possibile: ogni flessione VERA riempie i DOMS.
 export const SOLODIECI = {
-  target: 10,             // flessioni convalidate da Sergio per vincere
-  domsMax: 20,            // flessioni reali che riempiono la barra "DOMS DI DOMANI" (= sconfitta)
+  target: 7,              // flessioni convalidate da Sergio per vincere
+  domsMax: 17,            // flessioni reali che riempiono la barra "DOMS DI DOMANI" (= sconfitta)
   repMs: 800,             // durata di una flessione di Aurelio (discesa + risalita)
   bottomAt: 0.45,         // a che punto della flessione Aurelio tocca giù (lì la flessione conta come fatta)
   graceMs: 120,           // tolleranza: Sergio "vede" ancora per tanto dopo essersi girato
@@ -234,22 +258,25 @@ export const SOLODIECI = {
   //   sway = oscillazione in verticale; turn = la testa ruota; look = guarda Aurelio; back = torna a guardare il muro
   fasi: [
     { daControllo: 0, reps: [1, 1], repMs: 750, slow: 950,  sway: 300, turn: 250, look: 500, back: 200, hold: 0, double: 0, pausa: [0, 0] },
-    { daControllo: 3, reps: [0, 1], repMs: 720, slow: 900,  sway: 280, turn: 240, look: 480, back: 200, hold: 0.3, double: 0.25, pausa: [0, 200] },
-    { daControllo: 7, reps: [0, 1], repMs: 700, slow: 850,  sway: 260, turn: 220, look: 450, back: 180, hold: 0.25, double: 0, pausa: [0, 450] }
+    { daControllo: 2, reps: [0, 1], repMs: 720, slow: 900,  sway: 280, turn: 240, look: 480, back: 200, hold: 0.3, double: 0.25, pausa: [0, 200] },
+    { daControllo: 5, reps: [0, 1], repMs: 700, slow: 850,  sway: 260, turn: 220, look: 450, back: 180, hold: 0.25, double: 0, pausa: [0, 450] }
   ],
   holdMs: [500, 900],     // breve tenuta in verticale (fase 2 e 3)
+  // una volta per partita Sergio si gira di scatto: segnale molto più corto (controllo scelto a caso tra questi)
+  scatto: { controlli: [3, 5], slow: 600, sway: 150, turn: 140 },
   // Frasi
-  numeri: ['UNO!', 'DUE!', 'TRE!', 'QUATTRO!', 'CINQUE!', 'SEI!', 'SETTE!', 'OTTO!', 'NOVE!', 'DIECI!'],
+  numeri: ['UNO!', 'DUE!', 'TRE!', 'QUATTRO!', 'CINQUE!', 'SEI!', 'SETTE!'],
   extra: ['DAI!', 'PULITA!', 'QUESTA VALE!'],
-  resetLines: ['EH NO, QUESTA\nNON VALE. DA CAPO.', 'TI HO VISTO FERMO.', 'NON BARARE.', 'ERANO DIECI\nDI FILA.'],
+  resetLines: ['EH NO, QUESTA\nNON VALE. DA CAPO.', 'TI HO VISTO FERMO.', 'NON BARARE.', 'ERANO SETTE\nDI FILA.'],
   ludoDai: 'Dai Aurelito!',
   ludoDaiMax: 3,          // al massimo tante volte per partita
   catan: ['IO NON PARLO…', 'MA TU MI AIUTI\nAL CATAN.'],
   catanDopo: 2,           // il patto sul Catan può scattare dopo questo numero di controlli
-  winLines: ['Vedi che, Fra,\nne ha fatte dieci.', 'Visto? Con la musica\nrussa è tutto\npiù facile.'],
+  startLine: 'Vedi che Fra\nne ha fatte 10!',   // all'inizio: "guarda che stai facendo peggio di lui"
+  winLines: ['Visto? Con la musica\nrussa è tutto\npiù facile.'],
   loseDue: 'Ne mancavano\nsolo due.',
   losePoche: 'Dai, ne mancavano\npoche.',
-  voti: [[12, 'DOMS CONTENUTI'], [16, 'DOMS DEVASTANTI'], [99, 'DOMANI NON SI ALZA']],
+  voti: [[8, 'DOMS CONTENUTI'], [11, 'DOMS DEVASTANTI'], [99, 'DOMANI NON SI ALZA']],
   reward: { points: 300, domsMs: 6000 },  // vinto: +300 e DOMS corti nel livello
   domsMs: 15000                           // perso: DOMS lunghi nel livello (cibo e drink rimbalzano, più lento)
 };

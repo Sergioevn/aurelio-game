@@ -669,6 +669,36 @@ export const SPRITES = {
     ".KKKKK...KKKKK.",
     "..KKK.....KKK.."
   ],
+  "polo": [
+    "....BwwwwB....",
+    "..BBBBwwBBBB..",
+    ".BBBBBByBBBBB.",
+    "BBBBBBBBBBBBBB",
+    "BBBBBBByBBBBBB",
+    "BB.BBBBBBBB.BB",
+    "...BBBBBBBB...",
+    "...BBBBBBBB...",
+    "...BBBBBBBB...",
+    "...BBBBBBBB..."
+  ],
+  "scarpe": [
+    "PPP.....PPP.....",
+    "PMMP....PMMP....",
+    "PMMMPPP.PMMMPPP.",
+    "PMwMMMMPPMwMMMMP",
+    "kkkkkkk.kkkkkkk."
+  ],
+  "citazione": [
+    "wwwwwwwwwwww",
+    "wkkkkkwwwwww",
+    "wwwwwwwwwwww",
+    "wkkkkkkkkkww",
+    "wwwwwwwwwwww",
+    "wkkkkkkkwrrw",
+    "wwwwwwwwwrrw",
+    "wkkkkwwwwwww",
+    "wwwwwwwwwwww"
+  ],
   "offerta": [
     "..yyyyyyyyyyy",
     ".yyyyyyyyyyyy",

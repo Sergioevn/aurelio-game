@@ -20,6 +20,7 @@ export class MiniNebbia extends Phaser.Scene {
     // stato che deve ripartire da zero ogni volta che il mini-gioco viene rilanciato dal livello
     this.inQuad = false; this.lostQuad = false; this.grabIcons = null; this.sayTxt = null;
     this.canStart = false; this.canLeave = false; this.win_ = false; this.grabs = 0;
+    this.coloreDone = false; this.coloreBusy = false; this.spawnN = 0; this.sorp = null; this.zen = false;
 
     this.bg = this.add.tileSprite(W / 2, H / 2, W, H, 'road');
     this.items = [];
@@ -45,7 +46,7 @@ export class MiniNebbia extends Phaser.Scene {
       lifespan: 1600, frequency: 90, emitting: false }).setDepth(16);
 
     this.input.on('pointerdown', p => this.onDown(p));
-    this.input.on('pointermove', p => { if (p.isDown && (this.phase === 'caccia' || this.phase === 'quad')) this.targetX = p.x; });
+    this.input.on('pointermove', p => { if (p.isDown && (this.phase === 'caccia' || this.phase === 'quad' || this.phase === 'sorpasso')) this.targetX = p.x; });
     this.input.on('pointerup', () => { this.targetX = null; });
     this.keys = this.input.keyboard?.createCursorKeys();
 
@@ -82,7 +83,7 @@ export class MiniNebbia extends Phaser.Scene {
       if (this.onlyQuad) this.quadIntro(); else this.steal();
       return;
     }
-    if (this.phase === 'caccia' || this.phase === 'quad') { this.targetX = p.x; return; }
+    if (this.phase === 'caccia' || this.phase === 'quad' || this.phase === 'sorpasso') { this.targetX = p.x; return; }
     if (this.phase === 'quadIntro') {
       if (!this.canStart) return;
       sfx.pick(); this.quadBox.destroy(); this.startQuad();
@@ -133,8 +134,8 @@ export class MiniNebbia extends Phaser.Scene {
     this.spawnMs = 900; this.windMs = N.ventoEvery; this.insultMs = 3500;
     this.ph = { state: 'wait', ms: 1600 };
     this.grabs = 0; this.updateGrabs();
-    const hint = txt(this, W / 2, PLAYER_Y - 80, 'QUANDO SQUILLA, IL TELEFONO\nRICOMPARE DA QUELLA PARTE.\nPRENDILO 3 VOLTE: SCIVOLA!', 7, '#ffffff').setDepth(25);
-    this.tweens.add({ targets: hint, alpha: 0, delay: 2800, duration: 400, onComplete: () => hint.destroy() });
+    const hint = txt(this, W / 2, PLAYER_Y - 80, 'QUANDO SQUILLA, IL TELEFONO\nRICOMPARE DA QUELLA PARTE.\nPRENDILO 3 VOLTE: SCIVOLA!\nEVITA LE NOTE DEL TRIBUNALE!', 7, '#ffffff').setDepth(25);
+    this.tweens.add({ targets: hint, alpha: 0, delay: 3400, duration: 400, onComplete: () => hint.destroy() });
   }
 
   update(t, dt) {
@@ -184,7 +185,11 @@ export class MiniNebbia extends Phaser.Scene {
 
     // Lollo insulta il ladro (censurato)
     this.insultMs -= dt;
-    if (this.insultMs <= 0) { this.insultMs = Phaser.Math.Between(3500, 5000); this.lolloSay(Phaser.Utils.Array.GetRandom(N.insults)); }
+    if (this.insultMs <= 0 && !this.coloreBusy) {
+      this.insultMs = Phaser.Math.Between(3500, 5000);
+      if (!this.coloreDone) this.sayColore();   // la prima volta: le tre battute di fila
+      else this.lolloSay(Phaser.Utils.Array.GetRandom(N.insults));
+    }
 
     this.updatePhone(dt);
     if (this.phase !== 'caccia') return;
@@ -193,19 +198,24 @@ export class MiniNebbia extends Phaser.Scene {
     this.spawnMs -= dt;
     if (this.spawnMs <= 0) {
       this.spawnMs = Phaser.Math.Between(800, 1200);
-      const kind = Math.random() < 0.5 ? 'siga_accesa' : 'birra';
+      this.spawnN++;
+      const kind = this.spawnN % N.citazioneOgni === 0 ? 'citazione' : Math.random() < 0.5 ? 'siga_accesa' : 'birra';
       const x = kind === 'siga_accesa' ? Phaser.Math.Clamp(this.lollo.x + Phaser.Math.Between(-60, 60), 30, W - 30) : Phaser.Math.Between(40, W - 40);
       const o = this.add.image(x, kind === 'siga_accesa' ? this.lollo.y + 20 : -20, kind).setScale(2).setDepth(4);
+      if (kind === 'citazione') o.setAngle(Phaser.Math.Between(-20, 20));
       o.kind = kind;
       this.items.push(o);
     }
     const glow = Math.floor(this.elapsed / 200) % 2 ? 'siga_accesa_b' : 'siga_accesa';
     for (const o of this.items) {
-      o.y += (o.kind === 'siga_accesa' ? 120 : 100) * s;
+      o.y += (o.kind === 'siga_accesa' ? 120 : o.kind === 'citazione' ? 85 : 100) * s;
+      if (o.kind === 'citazione') o.x += Math.sin((this.elapsed + o.y * 8) / 300) * 25 * s;   // un foglio che svolazza
       if (o.kind === 'siga_accesa' && o.texture.key !== glow) o.setTexture(glow);
       if (!o.hit && Math.abs(o.x - p.x) < 20 && Math.abs(o.y - p.y) < 22) {
         o.hit = true;
-        if (o.kind === 'siga_accesa') {
+        if (o.kind === 'citazione') {
+          this.skipTurn();
+        } else if (o.kind === 'siga_accesa') {
           this.sigaMs = N.sigaMs; sfx.hit();
           this.floatText(p.x, p.y - 44, 'SIGA! CHE FUMO...', '#c8b49a');
         } else if (this.stunMs <= 0) {
@@ -274,6 +284,15 @@ export class MiniNebbia extends Phaser.Scene {
     }
   }
 
+  // Nota di comparsa in tribunale: salti un turno del telefono (se è a terra sparisce, altrimenti il prossimo squillo salta)
+  skipTurn() {
+    sfx.over(); this.cameras.main.shake(120, 0.006);
+    this.floatText(this.player.x, this.player.y - 50, N.citazioneLine, '#ff6b5b');
+    const ph = this.ph;
+    if (ph.img) { const img = ph.img; ph.img = null; this.tweens.add({ targets: img, alpha: 0, duration: 200, onComplete: () => img.destroy() }); }
+    ph.state = 'wait'; ph.ms = N.ringMs + N.phoneMs + 1800;   // un giro intero senza telefono
+  }
+
   // In alto: quante volte hai già preso il telefono (ne servono N.grabsToWin)
   updateGrabs() {
     if (!this.grabIcons) {
@@ -281,6 +300,13 @@ export class MiniNebbia extends Phaser.Scene {
       for (let i = 0; i < N.grabsToWin; i++) this.grabIcons.push(this.add.image(W / 2 - 14 + i * 14, 12, 'telefono').setDepth(21));
     }
     this.grabIcons.forEach((g, i) => { if (i < this.grabs) g.clearTint().setAlpha(1); else g.setTint(0x333333).setAlpha(0.7); });
+  }
+
+  // "DI CHE COLORE ERA?" -> "NON IL TELEFONO, OVVIAMENTE" -> "MA CHE COINCIDENZA", sempre in quest'ordine
+  sayColore() {
+    this.coloreDone = true; this.coloreBusy = true;
+    N.colore.forEach((line, i) => this.time.delayedCall(i * 1900, () => { if (this.phase === 'caccia') this.lolloSay(line); }));
+    this.time.delayedCall(N.colore.length * 1900, () => { this.coloreBusy = false; this.insultMs = 3000; });
   }
 
   lolloSay(line) {
@@ -374,17 +400,19 @@ export class MiniNebbia extends Phaser.Scene {
   lineX(u) {
     const k = Phaser.Math.Clamp((u - 150) / 1100, 0, 1);
     const amp = Q.curve[0] + (Q.curve[1] - Q.curve[0]) * k;
-    return W / 2 - 8 + amp * (0.7 * Math.sin(u / 170) + 0.3 * Math.sin(u / 73 + 1));
+    const x = W / 2 - 8 + amp * (0.7 * Math.sin(u / 170) + 0.3 * Math.sin(u / 73 + 1));
+    return this.zen ? x + (W / 2 - 8 - x) * this.wideK : x;
   }
   lineW(u) {
     const k = Phaser.Math.Clamp(u / 3000, 0, 1);
-    return Q.traccia[0] + (Q.traccia[1] - Q.traccia[0]) * k;
+    const w = Q.traccia[0] + (Q.traccia[1] - Q.traccia[0]) * k;
+    return this.zen ? w + (W + 40 - w) * this.wideK : w;
   }
 
   updateQuad(dt) {
-    if (this.phase !== 'quad' && this.phase !== 'quadEnd') return;
+    if (this.phase !== 'quad' && this.phase !== 'quadEnd' && this.phase !== 'sorpasso') return;
     const s = dt / 1000;
-    const moving = this.phase === 'quad';
+    const moving = this.phase === 'quad' || this.phase === 'sorpasso';
     if (moving) { this.elapsed += dt; this.dist += Q.vel * s; this.bg.tilePositionY -= Q.vel * s; }
 
     // disegna la traccia (terra più scura con i solchi delle ruote)
@@ -405,6 +433,8 @@ export class MiniNebbia extends Phaser.Scene {
     this.vx += (want - this.vx) * Math.min(1, Q.accel * s);
     q.x = Phaser.Math.Clamp(q.x + this.vx * s, 24, W - 34);
     q.setAngle(this.vx / Q.maxVx * 10);
+
+    if (this.phase === 'sorpasso') { q.y = PLAYER_Y; this.dust.emitting = false; this.updateSorpasso(dt); return; }
 
     // sulla traccia o fuori?
     const onLine = Math.abs(q.x - this.lineX(this.dist)) < this.lineW(this.dist) / 2 + 3; // +3: un po' di tolleranza
@@ -443,7 +473,7 @@ export class MiniNebbia extends Phaser.Scene {
         this.floatText(q.x, q.y - 50, 'GLI È CADUTA LA SIGA!', '#ff6b5b');
       } else {
         this.fumoMs -= dt;
-        if (this.fumoMs <= 0) { this.quadWin(); return; }
+        if (this.fumoMs <= 0) { this.startSorpasso(); return; }
       }
     } else if (this.calma >= 100) {
       this.fumoMs = Q.fumoMs; sfx.boost();
@@ -474,6 +504,47 @@ export class MiniNebbia extends Phaser.Scene {
     else if (left <= 0) this.quadLose('TEMPO SCADUTO!');
   }
 
+  // ---------- ostacolo finale: Lollo è zen, la strada si allarga, Antonio e Francesco lentissimi ----------
+  startSorpasso() {
+    const S = Q.sorpasso;
+    this.phase = 'sorpasso'; this.zen = true; this.calma = 100;
+    this.barFill.setScale(1, 1); this.barFill.fillColor = 0x3a8a3a; this.barSiga.setTexture('siga_accesa_b');
+    this.obstacles.forEach(o => o.destroy()); this.obstacles = [];
+    this.qSmoke.start(); this.qSiga.setVisible(true);   // Lollo continua a fumare tranquillo
+    this.qLollo.setTexture('lollo'); this.qLollo.x = 0;
+    this.floatText(this.quad.x, this.quad.y - 60, 'LOLLO È ZEN!', '#f4d03f');
+    this.wideK = 0;   // 0 = traccia normale, 1 = strada larga tutta
+    this.tweens.add({ targets: this, wideK: 1, duration: 900 });
+    // Antonio e Francesco sullo stesso quad, davanti, proprio sulla tua corsia
+    const x = Phaser.Math.Clamp(this.quad.x, 50, W - 60);
+    const c = this.add.container(x, PLAYER_Y - S.distanza).setDepth(6);
+    c.add(this.add.image(0, 0, 'quad').setScale(1.4));
+    c.add(this.add.image(0, 14, 'antonio').setScale(1.1));
+    c.add(this.add.image(0, -12, 'francesco').setScale(0.9));
+    this.sorp = c;
+    const hint = txt(this, W / 2 - 8, PLAYER_Y - 120, 'SUPERALI SENZA TAMPONARLI!', 8, '#ffffff').setDepth(25);
+    this.tweens.add({ targets: hint, alpha: 0, delay: 2200, duration: 400, onComplete: () => hint.destroy() });
+  }
+
+  updateSorpasso(dt) {
+    const S = Q.sorpasso, s = dt / 1000, q = this.quad, c = this.sorp;
+    // loro vanno dritti e lentissimi: dal nostro punto di vista "scendono" verso di noi
+    c.y += (Q.vel - S.velLoro) * s * 0.7;
+    c.x += Math.sin(this.elapsed / 500) * 4 * s;   // traballano appena
+    c.list[0].y = Math.sin(this.elapsed / 60) * 0.6;
+    if (Math.abs(c.x - q.x) < S.hitX && Math.abs(c.y - q.y) < S.hitY) { this.tamponati(); return; }
+    if (c.y > q.y + S.hitY + 10) { this.quadWin(); }
+  }
+
+  tamponati() {
+    sfx.hit(); this.cameras.main.shake(200, 0.015);
+    this.floatText(this.quad.x, this.quad.y - 60, 'TAMPONATI!\nGLI È CADUTA LA SIGA!', '#ff6b5b');
+    const siga = this.add.image(this.quad.x + 9, this.quad.y + 18, 'siga_accesa').setScale(1.4).setDepth(8);
+    this.tweens.add({ targets: siga, x: siga.x + 50, y: siga.y + 90, angle: 540, duration: 800, ease: 'Quad.out', onComplete: () => siga.destroy() });
+    this.qSmoke.stop(); this.qSiga.setVisible(false); this.qLollo.setTexture('lollo_panico');
+    this.quadLose('TAMPONATI!', true);
+  }
+
   quadSay(line) {
     if (this.sayTxt) this.sayTxt.destroy();
     const b = txt(this, Phaser.Math.Clamp(this.quad.x, 70, W - 80), this.quad.y + 52, line, 7, '#ff9ecb').setDepth(22);
@@ -483,20 +554,21 @@ export class MiniNebbia extends Phaser.Scene {
 
   stopQuad() {
     this.phase = 'quadEnd'; this.dust.stop(); this.targetX = null;
+    if (this.sorp) { const c = this.sorp; this.sorp = null; this.tweens.add({ targets: c, y: c.y + 140, alpha: 0, duration: 1200, onComplete: () => c.destroy() }); }
     this.obstacles.forEach(o => o.destroy()); this.obstacles = [];
   }
 
   quadWin() {
     this.stopQuad(); sfx.win();
     this.tweens.add({ targets: this.quad, angle: 0, duration: 300 });
-    this.floatText(this.quad.x, this.quad.y - 60, 'LOLLO È ZEN!', '#f4d03f');
+    this.floatText(this.quad.x, this.quad.y - 60, 'SORPASSO!', '#f4d03f');
     this.time.delayedCall(1200, () => this.lolloSays(FRIENDS.lollo.winLine, () => this.result(true)));
   }
 
-  quadLose(why) {
+  quadLose(why, quiet = false) {
     this.stopQuad(); sfx.over(); this.qSmoke.stop(); this.qSiga.setVisible(false);
     this.lostQuad = true;
-    this.floatText(W / 2, PLAYER_Y - 90, why, '#ff6b5b');
+    if (!quiet) this.floatText(W / 2, PLAYER_Y - 90, why, '#ff6b5b');
     if (why === 'LOLLO È SCESO!') {
       this.quad.remove(this.qLollo);
       this.qLollo.setPosition(this.quad.x, this.quad.y + 14).setDepth(7);
@@ -533,15 +605,14 @@ export class MiniNebbia extends Phaser.Scene {
     const g = this.add.container(0, 0).setDepth(50);
     g.add(this.add.rectangle(W / 2, H / 2, W - 30, 220, 0x1a1423, 0.95).setStrokeStyle(3, win ? 0x3a8a3a : 0xc0392b));
     if (win) {
-      g.add(txt(this, W / 2, H / 2 - 74, 'RECUPERATO!', 14, '#f4d03f'));
-      g.add(this.add.image(W / 2, H / 2 - 40, 'telefono').setScale(3));
-      g.add(txt(this, W / 2, H / 2 - 6, '+' + R.points + ' PUNTI', 9, '#ffffff'));
-      g.add(this.add.image(W / 2, H / 2 + 26, 'ventilatore').setScale(2));
-      g.add(txt(this, W / 2, H / 2 + 56, 'VENTILATORE! SOFFIA VIA\nPIZZE, ROCCE E ASINI', 7, '#bfe3f0'));
+      g.add(txt(this, W / 2, H / 2 - 72, Q.zenWin, 9, '#f4d03f'));
+      g.add(txt(this, W / 2, H / 2 - 22, '+' + R.points + ' PUNTI', 9, '#ffffff'));
+      g.add(this.add.image(W / 2, H / 2 + 14, 'ventilatore').setScale(2));
+      g.add(txt(this, W / 2, H / 2 + 50, 'VENTILATORE! SOFFIA VIA\nPIZZE, ROCCE E ASINI', 7, '#bfe3f0'));
     } else {
-      g.add(txt(this, W / 2, H / 2 - 74, this.lostQuad ? 'LOLLO NON È ZEN' : 'NIENTE TELEFONO', 11, '#ff6b5b'));
-      g.add(this.add.image(W / 2, H / 2 - 30, this.lostQuad ? 'lollo_panico' : 'ladro').setScale(3));
-      g.add(txt(this, W / 2, H / 2 + 30, 'TORNI NEL LIVELLO\nCON LA NEBBIA', 8, '#c8b49a'));
+      g.add(txt(this, W / 2, H / 2 - 72, this.lostQuad ? Q.zenLose : 'NIENTE TELEFONO', this.lostQuad ? 9 : 11, '#ff6b5b'));
+      g.add(this.add.image(W / 2, H / 2 - 14, this.lostQuad ? 'lollo_panico' : 'ladro').setScale(3));
+      g.add(txt(this, W / 2, H / 2 + 40, 'TORNI NEL LIVELLO\nCON LA NEBBIA', 8, '#c8b49a'));
     }
     const go = txt(this, W / 2, H / 2 + 92, 'TOCCA PER CONTINUARE', 7, '#f08a24');
     g.add(go);

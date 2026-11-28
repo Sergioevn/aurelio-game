@@ -129,7 +129,7 @@ export class MiniPortafoglio extends Phaser.Scene {
       const kind = this.pickKind();
       const o = this.add.image(Phaser.Math.Between(30, W - 30), -16, kind).setScale(2).setDepth(3);
       o.kind = kind; o.vel = P.cavolate[kind].vel;
-      if (kind === 'offerta') this.floatText(o.x, 60, 'OFFERTA LAMPO!', '#f4d03f');
+      if (kind === 'polo') this.antonioSay(P.poloLine, 1300);   // nell'euforia Antonio urla
       this.items.push(o);
     }
 
@@ -196,11 +196,11 @@ export class MiniPortafoglio extends Phaser.Scene {
 
   updateWallet() { this.info.setText(this.soldi + '€'); this.info.setColor(this.soldi <= 150 ? '#ff6b5b' : '#ffffff'); }
 
-  antonioSay(line) {
+  antonioSay(line, hold = 700) {
     if (this.bubbleObj) this.bubbleObj.destroy();
-    const b = txt(this, Phaser.Math.Clamp(this.antonio.x, 60, W - 60), this.antonio.y - 46, line, 7, '#ff9ecb').setDepth(22);
+    const b = txt(this, Phaser.Math.Clamp(this.antonio.x, 70, W - 70), this.antonio.y - 46, line, 7, '#ff9ecb').setDepth(22);
     this.bubbleObj = b;
-    this.tweens.add({ targets: b, y: b.y - 10, alpha: 0, delay: 700, duration: 400, onComplete: () => { b.destroy(); if (this.bubbleObj === b) this.bubbleObj = null; } });
+    this.tweens.add({ targets: b, y: b.y - 10, alpha: 0, delay: hold, duration: 400, onComplete: () => { b.destroy(); if (this.bubbleObj === b) this.bubbleObj = null; } });
   }
 
   clearItems() { this.items.forEach(o => o.destroy()); this.items = []; }
@@ -260,16 +260,20 @@ export class MiniPortafoglio extends Phaser.Scene {
     // HUD: bicchiere grande (si svuota insieme a quello in mano), segnale dell'onda, freccia verso Antonio
     this.hudGlass = this.add.graphics().setDepth(22);
     this.add.rectangle(W - 26, 52, 40, 46, 0x1a1423, 0.75).setDepth(21).setStrokeStyle(1, 0x6e6a76);
-    this.ondaText = txt(this, W / 2, 46, 'ONDA!', 12, '#ffffff').setDepth(23).setAlpha(0);
+    this.ondaText = txt(this, W / 2 - 14, 54, 'ONDA!', 12, '#ffffff').setDepth(23).setAlpha(0);
+    // indicatore dell'onda: la barra si riempie fino all'arrivo dell'onda; piena e rossa = FERMO
+    this.gauge = this.add.graphics().setDepth(23);
+    this.gaugeLbl = txt(this, 22, 34, 'ONDA', 6, '#ffffff', 0).setOrigin(0, 0.5).setDepth(23);
     this.arrow = txt(this, 0, DECK_Y - 70, '', 7, '#f4d03f').setDepth(23);
 
     // spiegazione iniziale: solo le due regole
     const g = this.add.container(0, 0).setDepth(40);
-    g.add(this.add.rectangle(W / 2, H / 2 - 40, W - 30, 200, 0x1a1423, 0.95).setStrokeStyle(3, 0xf4d03f));
-    g.add(this.add.image(W / 2, H / 2 - 108, 'camparino').setScale(3));
-    g.add(txt(this, W / 2, H / 2 - 64, 'TIENI PREMUTO\nPER CAMMINARE', 9, '#ffffff'));
-    g.add(txt(this, W / 2, H / 2 - 22, "SOLLEVA IL DITO\nPRIMA DELL'ONDA", 9, '#ff9ecb'));
-    const go = txt(this, W / 2, H / 2 + 34, 'TOCCA PER PARTIRE', 7, '#f08a24');
+    g.add(this.add.rectangle(W / 2, H / 2 - 30, W - 30, 250, 0x1a1423, 0.95).setStrokeStyle(3, 0xf4d03f));
+    g.add(this.add.image(W / 2, H / 2 - 128, 'camparino').setScale(3));
+    g.add(txt(this, W / 2, H / 2 - 88, "MISSIONE: CONSEGNA IL\nCAMPARINO ALL'ULTRAECCITATO\nANTONIO", 7, '#f4d03f'));
+    g.add(txt(this, W / 2, H / 2 - 50, 'TIENI PREMUTO\nPER CAMMINARE', 9, '#ffffff'));
+    g.add(txt(this, W / 2, H / 2 + 4, "SOLLEVA IL DITO\nQUANDO LA BARRA\nDELL'ONDA È PIENA", 8, '#ff9ecb'));
+    const go = txt(this, W / 2, H / 2 + 60, 'TOCCA PER PARTIRE', 7, '#f08a24');
     g.add(go); this.tweens.add({ targets: go, alpha: 0.2, duration: 450, yoyo: true, repeat: -1 });
     this.boatIntro = g; this.canStart = false;
     this.time.delayedCall(500, () => { this.canStart = true; });
@@ -383,6 +387,25 @@ export class MiniPortafoglio extends Phaser.Scene {
     return Math.sin(this.elapsed / 700) * 0.5;
   }
 
+  // Barra dell'onda (in alto): verde = vai tranquillo, gialla = sta arrivando, rossa piena = FERMO!
+  drawGauge(st) {
+    const g = this.gauge, x0 = 52, x1 = W - 56, y = 34, w = x1 - x0;
+    g.clear();
+    const show = this.phase === 'walk' && this.wave;
+    this.gaugeLbl.setVisible(!!show);
+    if (!show) return;
+    const k = Math.min(1, this.wave.t / this.wave.ms);
+    let f, col;
+    if (st === 'calm') { f = 0.6 * k; col = 0x3a8a3a; }
+    else if (st === 'warn') { f = 0.6 + 0.4 * k; col = Math.floor(this.elapsed / 90) % 2 ? 0xf4d03f : 0xf08a24; }
+    else { f = 1; col = Math.floor(this.elapsed / 80) % 2 ? 0xff3b2e : 0xc0392b; }
+    g.fillStyle(0x1a1423, 0.85).fillRect(x0 - 2, y - 5, w + 4, 10);
+    g.fillStyle(col).fillRect(x0, y - 3, w * f, 6);
+    if (st === 'roll') g.fillStyle(0xffffff, 0.5).fillRect(x0, y - 3, w * (1 - k), 2);   // quanto manca alla fine del rollio
+    g.lineStyle(1, 0xffffff, 0.8).strokeRect(x0 - 2, y - 5, w + 4, 10);
+    g.fillStyle(0xffffff).fillRect(x0 + w * 0.6, y - 5, 1, 10);   // da qui in poi l'onda sta arrivando
+  }
+
   // ---------- ciclo ----------
   updateBoat(dt) {
     const B = P.barca, s = dt / 1000;
@@ -429,6 +452,7 @@ export class MiniPortafoglio extends Phaser.Scene {
     const st = this.phase === 'walk' && this.wave ? this.wave.st : 'calm';
     this.ondaText.setAlpha(st === 'warn' ? 0.6 + 0.4 * Math.sin(this.elapsed / 70) : st === 'roll' ? 1 : 0)
       .setColor(st === 'roll' ? '#ff6b5b' : '#ffffff').setText(st === 'roll' ? 'FERMO!' : 'ONDA!');
+    this.drawGauge(st);
 
     // Aurelio: cammina (dondola) o sta fermo a gambe piantate
     const a = this.aur;

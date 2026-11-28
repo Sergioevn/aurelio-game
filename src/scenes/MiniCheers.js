@@ -14,7 +14,7 @@ const TABLE_X = 135, TABLE_Y = 308;
 
 // Pose dei bicchieri: punto in basso al centro della pinta + inclinazione
 const A_REST = { x: 104, y: 305, a: 0 }, A_MEET = { x: 123, y: 297, a: 10 }, A_MOUTH = { x: 92, y: 304, a: -50 };
-const A_EARLY = { x: 116, y: 292, a: 4 };
+const A_EARLY = { x: 116, y: 292, a: 4 }, A_DOWN = { x: 100, y: 309, a: 0 };
 const F_REST = { x: 166, y: 305, a: 0 }, F_LIFT = { x: 173, y: 299, a: 0 }, F_MEET = { x: 147, y: 297, a: -10 };
 const F_MOUTH = { x: 178, y: 304, a: 50 }, F_FAKE = { x: 184, y: 250, a: 0 };
 
@@ -48,7 +48,7 @@ export class MiniCheers extends Phaser.Scene {
     this.mouthMs = 0; this.sipMs = 0; this.fShake = 0; this.aLean = 0;
     this.bubbles = {};
     this.beatLen = 0; this.walkP = undefined; this.walkT = 0; this.keepFriendTint = false;
-    this.fOverride = null; this.fTalkMs = 0; this.meetMs = 0; this.canLeave = false; this.win_ = false; this.fPh = null; this.rate = 0; this.credit = 0;
+    this.blockMs = 0; this.fOverride = null; this.fTalkMs = 0; this.meetMs = 0; this.canLeave = false; this.win_ = false; this.fPh = null; this.rate = 0; this.credit = 0;
 
     this.drawScene();
 
@@ -65,6 +65,8 @@ export class MiniCheers extends Phaser.Scene {
     this.aurelio = this.add.image(AUR_X, FEET, 'aurelio_seduto').setOrigin(0.5, 1).setScale(SC).setDepth(5);
     this.francesco = this.add.image(FRA_X, FEET, 'francesco_seduto').setOrigin(0.5, 1).setScale(SC).setDepth(5);
     this.arms = this.add.graphics().setDepth(6);
+    this.blockG = this.add.graphics().setDepth(24);
+    this.blockLbl = txt(this, 96, 205, 'BICCHIERE GIÙ!', 6, '#ff6b5b').setDepth(24).setVisible(false);
     this.aPint = this.makePint(); this.fPint = this.makePint();
     this.drawPint(this.aPint, this.level); this.drawPint(this.fPint, this.fLevel);
 
@@ -244,7 +246,8 @@ export class MiniCheers extends Phaser.Scene {
     g.add(this.add.image(W / 2 + 36, H / 2 - 66, 'birra').setScale(2.5));
     g.add(txt(this, W / 2, H / 2 - 18, f.name, 14, '#f4d03f'));
     g.add(txt(this, W / 2, H / 2 + 6, '"' + f.line + '"', 8, '#ffffff'));
-    g.add(txt(this, W / 2, H / 2 + 46, "FINISCI L'ULTIMA BIRRA\nPRIMA CHE ARRIVINO\nGIORGIO E CAIMAN", 7, '#bfe3f0'));
+    g.add(txt(this, W / 2, H / 2 + 40, "FINISCI L'ULTIMA BIRRA\nPRIMA CHE ARRIVINO\nGIORGIO E CAIMAN", 7, '#bfe3f0'));
+    g.add(txt(this, W / 2, H / 2 + 76, 'CIN SBAGLIATO = BICCHIERE GIÙ', 6, '#ff9ecb'));
     const go = txt(this, W / 2, H / 2 + 100, 'TOCCA PER PARTIRE', 7, '#f08a24');
     g.add(go);
     this.tweens.add({ targets: go, alpha: 0.2, duration: 450, yoyo: true, repeat: -1 });
@@ -258,8 +261,8 @@ export class MiniCheers extends Phaser.Scene {
     this.phase = 'play'; this.t = 0;
     this.nextBeat();
     sfx.ambientStart();
-    const hint = txt(this, W / 2, 418, 'PREMI AL CIN\nTIENI PREMUTO PER BERE', 8, '#ffffff').setDepth(25);
-    this.tweens.add({ targets: hint, alpha: 0, delay: 2400, duration: 400, onComplete: () => hint.destroy() });
+    const hint = txt(this, W / 2, 418, 'PREMI AL CIN E BEVI\nFINCHÉ BEVE FRANCESCO', 8, '#ffffff').setDepth(25);
+    this.tweens.add({ targets: hint, alpha: 0, delay: 2800, duration: 400, onComplete: () => hint.destroy() });
   }
 
   // ================= INPUT =================
@@ -271,6 +274,7 @@ export class MiniCheers extends Phaser.Scene {
     }
     if (this.phase !== 'play' || this.holding) return;
     this.holding = true;
+    if (this.blockMs > 0) { this.fShakeA = 200; sfx.tone([180], 0.05, 'square', 0.03); return; }   // bicchiere giù: non puoi
 
     const b = this.beat, lt = this.t - this.beatStart;
     if (b.toast) {
@@ -279,7 +283,7 @@ export class MiniCheers extends Phaser.Scene {
       const d = lt - b.reach;                          // ms rispetto al contatto dei bicchieri
       if (d < -w.primaBuono) { this.presto(); return; }
       if (d <= w.dopoBuono) { this.cin(Math.abs(d) <= w.perfetto ? 'perfetto' : 'buono', Math.max(0, d)); return; }
-      if (lt < b.reach + b.drink) { this.cin('tardi', 0); return; }
+      if (lt < b.reach + b.drink) { this.toastUsed = true; this.sbagliato('TARDI!'); return; }
       return;                                          // sta già abbassando il bicchiere: nessuna penalità
     }
     this.presto();
@@ -288,7 +292,28 @@ export class MiniCheers extends Phaser.Scene {
   up() {
     if (!this.holding) return;
     this.holding = false;
+    // lasci mentre Francesco sta ancora bevendo: non hai finito di bere con lui
+    if (this.phase === 'play' && this.aState === 'drink' && this.fPh?.ph === 'drink' && !this.beat.tutorial) { this.lasciato(); return; }
     if (this.aState === 'drink' || this.aState === 'listen') this.aState = 'idle';
+  }
+
+  // ---------- penalità: BICCHIERE GIÙ (per un paio di secondi non si beve) ----------
+  blocca() {
+    this.blockMs = C.bloccoMs; this.aState = 'blocked'; this.holdBar = 1;
+  }
+
+  // cin sbagliato: in ritardo o mai premuto
+  sbagliato(label) {
+    this.blocca(); sfx.hit(); this.fShake = 300;
+    const t = txt(this, TABLE_X, 266, label, 8, '#ff6b5b').setDepth(25);
+    this.tweens.add({ targets: t, y: 248, alpha: 0, delay: 300, duration: 450, onComplete: () => t.destroy() });
+    this.say('francesco', C.mancatoLine, 1300);
+  }
+
+  // lasciato a metà sorso
+  lasciato() {
+    this.blocca(); sfx.hit(); this.fShake = 300;
+    this.say('francesco', C.metaLine, 1400);
   }
 
   // Troppo presto: Aurelio prova a brindare mentre Francesco parla
@@ -296,7 +321,7 @@ export class MiniCheers extends Phaser.Scene {
     if (this.t - this.lastPresto < C.cooldownPresto) return;
     this.lastPresto = this.t;
     this.penalty += C.penaltyPresto;
-    this.aState = 'early'; this.earlyMs = 260;
+    this.aState = 'early'; this.earlyMs = 260; this.blockAfterEarly = true;
     this.fShake = 300;
     sfx.hit();
     this.say('francesco', C.prestoLine, 1100);
@@ -330,11 +355,15 @@ export class MiniCheers extends Phaser.Scene {
         tint: [0xffffff, 0xf4d03f], scale: 1.5, emitting: false }).setDepth(24);
       e.explode(this.quality === 'perfetto' ? 14 : 8); this.time.delayedCall(350, () => e.destroy());
     }
-    if (!this.holding) this.aState = 'idle';
+    if (!this.holding) {   // ha fatto cin ma ha già lasciato: non beve con Francesco
+      if (!b.tutorial) this.lasciato(); else this.aState = 'idle';
+    }
   }
 
   // ================= SEQUENZA DEI BRINDISI =================
   nextBeat() {
+    // il brindisi appena finito è passato senza cin (e non eri già col bicchiere giù): cin mancato
+    if (this.phase === 'play' && this.beat?.toast && !this.toastUsed && this.blockMs <= 0 && this.beatIdx >= 0) this.sbagliato('CIN MANCATO!');
     this.beatIdx++;
     if (this.beatIdx < C.beats.length) this.beat = C.beats[this.beatIdx];
     else this.beat = C.filler[this.fillerIdx++ % C.filler.length];
@@ -405,7 +434,11 @@ export class MiniCheers extends Phaser.Scene {
         this.say('francesco', C.ascoltoLine, 1400);
       }
     }
-    if (this.aState === 'early') { this.earlyMs -= dt; if (this.earlyMs <= 0) this.aState = 'idle'; }
+    if (this.aState === 'early') { this.earlyMs -= dt; if (this.earlyMs <= 0) { this.aState = 'idle'; if (this.blockAfterEarly) { this.blockAfterEarly = false; this.blocca(); } } }
+    if (this.blockMs > 0) {
+      this.blockMs -= dt;
+      if (this.blockMs <= 0) { this.blockMs = 0; if (this.aState === 'blocked') this.aState = 'idle'; }
+    }
 
     // Prima controlla la birra, poi l'arrivo degli amici (stesso istante = vinto)
     if (this.level <= 0.001) { this.level = 0; this.win(); return; }
@@ -454,7 +487,7 @@ export class MiniCheers extends Phaser.Scene {
     // Aurelio: il bicchiere segue lo stato (con un po' di morbidezza)
     this.meetMs = Math.max(0, (this.meetMs || 0) - dt);
     const target = this.meetMs > 0 && this.aState === 'drink' ? A_MEET
-      : ({ idle: A_REST, reach: A_MEET, drink: A_MOUTH, listen: A_MOUTH, early: A_EARLY }[this.aState] || A_REST);
+      : ({ idle: A_REST, reach: A_MEET, drink: A_MOUTH, listen: A_MOUTH, early: A_EARLY, blocked: A_DOWN }[this.aState] || A_REST);
     const k = Math.min(1, dt * 0.022);
     this.aPose = lerpPose(this.aPose, target, k);
     if (this.aState !== 'gone') {
@@ -468,6 +501,16 @@ export class MiniCheers extends Phaser.Scene {
     this.arms.clear();
     this.drawArm(FRA_X - 18 + fp.lean, FEET - 30, fPose, 0xf4f1ea);
     if (this.aState !== 'gone') { this.setPint(this.aPint, this.aPose); this.drawArm(AUR_X + 18 + this.aLean, FEET - 30, this.aPose, 0xf4f1ea); }
+
+    // bicchiere giù: barra che si svuota sopra la pinta di Aurelio
+    this.blockG.clear();
+    this.fShakeA = Math.max(0, (this.fShakeA || 0) - dt);
+    if (this.blockMs > 0 && this.phase === 'play') {
+      const k = this.blockMs / C.bloccoMs, x = 64, y = 214 + (this.fShakeA > 0 ? Math.sin(this.fShakeA / 20) * 2 : 0);
+      this.blockG.fillStyle(0x1a1423, 0.85).fillRect(x - 2, y - 2, 64, 8);
+      this.blockG.fillStyle(0xc0392b).fillRect(x, y, 60 * k, 4);
+      this.blockLbl.setVisible(true).setY(y - 9);
+    } else this.blockLbl.setVisible(false);
 
     // nuvolette che seguono chi parla
     for (const [who, b] of Object.entries(this.bubbles)) this.placeBubble(who, b);

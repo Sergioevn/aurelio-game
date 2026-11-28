@@ -61,6 +61,7 @@ export class MiniSoloDieci extends Phaser.Scene {
     this.sMode = 'stand';                         // stand | anim | hs
     this.sPose = null; this.sAnim = null;
     this.queue = []; this.seg = null; this.segT = 0; this.checks = 0; this.check = null;
+    this.scattoDone = false; this.scattoAt = rndi(C.scatto.controlli[0], C.scatto.controlli[1]);
     this.sNod = 0; this.sShake = 0; this.sTalkMs = 0;
     // Ludo
     this.lState = 'hang'; this.lT = 0; this.lMs = 900; this.lReps = 0; this.lFace = null; this.lFaceMs = 0;
@@ -185,7 +186,7 @@ export class MiniSoloDieci extends Phaser.Scene {
 
   drawHUD() {
     this.add.rectangle(W / 2, 12, W, 24, OUT, 0.85).setDepth(20);
-    txt(this, W / 2, 12, 'SOLO DIECI', 8, '#f4d03f').setDepth(21);
+    txt(this, W / 2, 12, 'SOLO SETTE', 8, '#f4d03f').setDepth(21);
     this.add.rectangle(W / 2, 46, W - 8, 40, OUT, 0.9).setDepth(20).setStrokeStyle(1, 0x3a3a44);
     txt(this, 48, 36, 'SERGIO', 7, '#bfe3f0').setDepth(21);
     this.countText = txt(this, 48, 54, '0/' + C.target, 12, '#ffffff').setDepth(21);
@@ -199,8 +200,8 @@ export class MiniSoloDieci extends Phaser.Scene {
     const g = this.add.container(0, 0).setDepth(40);
     g.add(this.add.rectangle(W / 2, H / 2, W - 24, 316, OUT, 0.95).setStrokeStyle(3, 0xf4d03f));
     g.add(this.add.image(W / 2, H / 2 - 118, 'sergio').setScale(4));
-    g.add(txt(this, W / 2, H / 2 - 70, 'SOLO DIECI', 14, '#f4d03f'));
-    g.add(txt(this, W / 2, H / 2 - 38, 'FAI CONTARE A SERGIO\n10 FLESSIONI', 8, '#ffffff'));
+    g.add(txt(this, W / 2, H / 2 - 70, 'SOLO SETTE', 14, '#f4d03f'));
+    g.add(txt(this, W / 2, H / 2 - 38, 'FAI CONTARE A SERGIO\n' + C.target + ' FLESSIONI', 8, '#ffffff'));
     const rules = this.add.container(0, 0).setAlpha(0);
     rules.add(txt(this, W / 2, H / 2 + 4, 'TIENI PREMUTO\nPER FARE FLESSIONI', 7, '#bfe3f0'));
     rules.add(txt(this, W / 2, H / 2 + 38, 'SERGIO CONTA\nSOLO QUANDO GUARDA', 7, '#bfe3f0'));
@@ -221,14 +222,18 @@ export class MiniSoloDieci extends Phaser.Scene {
     this.introBox.destroy();
     this.phase = 'start'; this.playT = 0;
     sfx.ambientStart(0.015);
-    // Sergio accende la musica dalla cassa, poi sale in verticale
-    this.sAnimTo([this.standPose(), this.tapPose()], 380);
-    this.time.delayedCall(420, () => {
+    // Sergio indica Fra: "Vedi che Fra ne ha fatte 10!" (sfida), poi accende la musica e sale in verticale
+    const D = 1700;
+    this.sAnimTo([this.standPose(), this.pointPose(true)], 240);
+    this.say('sergio', C.startLine, 1500);
+    this.fLookUp = 1500;
+    this.time.delayedCall(D - 420, () => this.sAnimTo([this.pointPose(true), this.tapPose()], 380));
+    this.time.delayedCall(D, () => {
       this.musicOn = true; sfx.musicStart(); sfx.pick();
       this.tweens.add({ targets: this.speaker, scaleY: 2.3, duration: 90, yoyo: true });
       this.sAnimTo([this.tapPose(), this.standPose()], 260);
     });
-    this.time.delayedCall(800, () => {
+    this.time.delayedCall(D + 380, () => {
       sfx.whoosh();
       this.sAnimTo([this.standPose(), this.pikePose(), this.hsPose(0, 0, 'away')], 620, () => {
         this.sMode = 'hs'; this.phase = 'play';
@@ -236,7 +241,7 @@ export class MiniSoloDieci extends Phaser.Scene {
       });
     });
     const hint = txt(this, W / 2, 440, 'TIENI PREMUTO', 9, '#ffffff').setDepth(25);
-    this.tweens.add({ targets: hint, alpha: 0, delay: 2300, duration: 400, onComplete: () => hint.destroy() });
+    this.tweens.add({ targets: hint, alpha: 0, delay: 3800, duration: 400, onComplete: () => hint.destroy() });
   }
 
   // ================= INPUT =================
@@ -322,7 +327,10 @@ export class MiniSoloDieci extends Phaser.Scene {
     for (let i = 0; i < n; i++) q.push({ type: 'rep', ms: f.repMs });
     if (f.hold && Math.random() < f.hold) q.push({ type: 'hold', ms: rnd(C.holdMs[0], C.holdMs[1]) });
     // il segnale (sempre uguale): ultima ripetizione rallentata, oscillazione, testa che ruota
-    q.push({ type: 'slow', ms: f.slow }, { type: 'sway', ms: f.sway }, { type: 'turn', ms: f.turn },
+    // una volta per partita: girata di scatto (stesso segnale, ma molto più rapido)
+    const sc = !this.scattoDone && this.checks >= this.scattoAt ? C.scatto : null;
+    if (sc) this.scattoDone = true;
+    q.push({ type: 'slow', ms: sc ? sc.slow : f.slow }, { type: 'sway', ms: sc ? sc.sway : f.sway }, { type: 'turn', ms: sc ? sc.turn : f.turn },
            { type: 'look', ms: f.look }, { type: 'back', ms: f.back });
     this.queue = q.filter(s => s.ms > 0);
     this.nextSeg();
@@ -707,24 +715,19 @@ export class MiniSoloDieci extends Phaser.Scene {
     this.time.delayedCall(500, () => { sfx.whoosh(); this.sAnimTo([this.sPose, this.pikePose(), this.standPose()], 650); });
     // 3: Aurelio resta a terra distrutto
     this.time.delayedCall(700, () => { this.repT = null; this.tweens.add({ targets: this, flatK: 1, duration: 300, ease: 'Bounce.out' }); this.aFace = 'aurelio_fatica'; this.aFaceMs = 99999; });
-    // 4-6: indica Aurelio e parla a Francesco
+    // 4-6: indica Aurelio, la frase sulla musica russa, la musica sale; Francesco alza gli occhi dal telefono
     this.time.delayedCall(1300, () => {
-      this.sAnimTo([this.standPose(), this.pointPose(true)], 260);
+      this.sAnimTo([this.standPose(), this.pointPose(false)], 260);
       this.fLookUp = 99999;
-      this.say('sergio', C.winLines[0], 2200);
-    });
-    // 11: Francesco ride
-    this.time.delayedCall(2300, () => { this.fLaugh = 1300; this.fJump = 400; });
-    // 7-9: guarda Aurelio, seconda frase, la musica sale
-    this.time.delayedCall(3600, () => {
-      this.sAnimTo([this.pointPose(true), this.pointPose(false)], 200);
-      this.say('sergio', C.winLines[1], 2600);
+      this.say('sergio', C.winLines[0], 2600);
       sfx.musicBoost(2600);
     });
-    // 10: Aurelio guarda Ludo, lei gli ricorda il patto (occhiolino + lancio dei dadi)
-    this.time.delayedCall(4400, () => { this.aLookUp = 1; this.aFace = 'aurelio_preoccupato'; });
-    this.time.delayedCall(4800, () => { this.lFace = 'ludo_occhiolino'; this.lFaceMs = 500; this.diceMime(); });
-    this.time.delayedCall(6700, () => this.result(true));
+    // Francesco ride
+    this.time.delayedCall(2200, () => { this.fLaugh = 1300; this.fJump = 400; });
+    // Aurelio guarda Ludo, lei gli ricorda il patto (occhiolino + lancio dei dadi)
+    this.time.delayedCall(3200, () => { this.aLookUp = 1; this.aFace = 'aurelio_preoccupato'; });
+    this.time.delayedCall(3600, () => { this.lFace = 'ludo_occhiolino'; this.lFaceMs = 500; this.diceMime(); });
+    this.time.delayedCall(5500, () => this.result(true));
   }
 
   diceMime() {
@@ -773,7 +776,7 @@ export class MiniSoloDieci extends Phaser.Scene {
     this.bubbles = {};
     const g = this.add.container(0, 0).setDepth(50);
     g.add(this.add.rectangle(W / 2, H / 2, W - 24, 282, OUT, 0.95).setStrokeStyle(3, win ? 0x3a8a3a : 0xc0392b));
-    g.add(txt(this, W / 2, H / 2 - 112, win ? 'SOLO DIECI!' : 'DOMS MORTALI', 13, win ? '#f4d03f' : '#ff6b5b'));
+    g.add(txt(this, W / 2, H / 2 - 112, win ? 'SOLO SETTE!' : 'DOMS MORTALI', 13, win ? '#f4d03f' : '#ff6b5b'));
     g.add(txt(this, W / 2, H / 2 - 76, 'SERGIO NE HA CONTATE', 7, '#bfe3f0'));
     g.add(txt(this, W / 2, H / 2 - 56, String(this.count), 14, '#ffffff'));
     g.add(txt(this, W / 2, H / 2 - 28, 'AURELIO NE HA FATTE DAVVERO', 7, '#ff9ecb'));
@@ -782,7 +785,7 @@ export class MiniSoloDieci extends Phaser.Scene {
     const cnt = { v: 0 };
     this.tweens.add({ targets: cnt, v: this.real, delay: 400, duration: 700, onUpdate: () => realT.setText(String(Math.round(cnt.v))) });
     if (win) {
-      g.add(txt(this, W / 2, H / 2 + 24, this.voto(), 9, this.real <= 12 ? '#8bd650' : this.real <= 16 ? '#f08a24' : '#ff6b5b'));
+      g.add(txt(this, W / 2, H / 2 + 24, this.voto(), 9, this.real <= C.voti[0][0] ? '#8bd650' : this.real <= C.voti[1][0] ? '#f08a24' : '#ff6b5b'));
       if (!this.standalone) g.add(txt(this, W / 2, H / 2 + 48, '+' + C.reward.points + ' PUNTI', 8, '#f4d03f'));
       const go = txt(this, W / 2, H / 2 + 100, 'TOCCA PER CONTINUARE', 7, '#f08a24');
       g.add(go); this.tweens.add({ targets: go, alpha: 0.3, duration: 450, yoyo: true, repeat: -1 });
