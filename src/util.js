@@ -151,6 +151,16 @@ export function makeTextures(scene) {
   bc.fillStyle = '#c0392b'; bc.fillRect(3, 26, 20, 2);       // riga rossa sullo scafo
   boat.refresh();
 
+  // Aura (alone morbido bianco, colorato con il tint): per racchetta e microfono
+  const AS = 32;
+  const au = scene.textures.createCanvas('aura', AS, AS);
+  const ac = au.getContext();
+  const gr = ac.createRadialGradient(AS / 2, AS / 2, 2, AS / 2, AS / 2, AS / 2);
+  gr.addColorStop(0, 'rgba(255,255,255,0.9)');
+  gr.addColorStop(0.5, 'rgba(255,255,255,0.35)');
+  gr.addColorStop(1, 'rgba(255,255,255,0)');
+  ac.fillStyle = gr; ac.fillRect(0, 0, AS, AS); au.refresh();
+
   // Particella
   const p =scene.textures.createCanvas('spark', 2, 2);
   p.getContext().fillStyle = '#ffffff'; p.getContext().fillRect(0, 0, 2, 2); p.refresh();

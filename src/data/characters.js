@@ -17,8 +17,16 @@ export const BOOSTERS = {
   spritz:    { label: 'SPRITZ! TURBO',        effect: 'speed',      ms: 6000,
                camparino: 'CAMPARINO! TURBO' },  // battuto Antonio, gli spritz diventano camparini per sempre
   birra:     { label: 'BIRRA! PUNTI x2',      effect: 'double',     ms: 8000 },
-  vino:      { label: 'NEBBIOLO! INVINCIBILE', effect: 'invincible', ms: 5000 },
-  racchetta: { label: 'PADEL MODE!',          effect: 'padel',      ms: 8000 }
+  racchetta: { label: 'PADEL MODE!',          effect: 'padel',      ms: 8000, aura: 0xffe066 },
+  microfono: { label: 'KARAOKE!',             effect: 'karaoke',    ms: 6000, aura: 0xff9ecb }
+};
+
+// Microfono: modalità karaoke, le onde sonore rompono gli oggetti negativi vicini ad Aurelio
+export const KARAOKE = {
+  radius: 75,          // raggio delle onde d'urto (px)
+  waveEvery: 500,      // ogni quanto parte un'onda (ms)
+  shoutEvery: 1600,    // ogni quanto Aurelio urla una frase (ms)
+  lines: ['VAMOS, MI GENTE!', 'DI SERE NEREEE']
 };
 
 // Ostacoli: toccarli costa una vita
@@ -40,8 +48,8 @@ export const CRUTCHES = { ms: 6000, speed: 0.5, label: 'IN STAMPELLE...' };
 
 // Probabilità di comparsa (pesi relativi) nel livello principale
 export const SPAWN_WEIGHTS = {
-  pizza: 26, roccia: 26, asino: 11,
-  spritz: 7, birra: 7, vino: 4, racchetta: 3
+  pizza: 26, roccia: 26, asino: 3,
+  spritz: 7, birra: 7, racchetta: 3, microfono: 3
 };
 
 // Maggipinto: il boss che non esce mai di casa

@@ -1,6 +1,6 @@
 import { W, H, txt, PLAYER_Y, FOG_R, save } from '../util.js';
 import { sfx } from '../sfx.js';
-import { FRIENDS, BOOSTERS, OBSTACLES, CRUTCHES, DONKEY, LEVEL, SPAWN_WEIGHTS, BOSS, MONTAGNA, NEBBIA, PORTAFOGLIO } from '../data/characters.js';
+import { FRIENDS, BOOSTERS, OBSTACLES, CRUTCHES, DONKEY, LEVEL, SPAWN_WEIGHTS, BOSS, MONTAGNA, NEBBIA, PORTAFOGLIO, KARAOKE } from '../data/characters.js';
 
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
@@ -21,6 +21,8 @@ export class Level extends Phaser.Scene {
     this.player = this.physics.add.sprite(W / 2, PLAYER_Y, 'aurelio').setScale(2).setDepth(5);
     this.player.body.setSize(12, 20).setOffset(3, 4);
     this.racket = this.add.image(0, 0, 'racchetta').setScale(1.6).setDepth(6).setVisible(false);
+    this.mic = this.add.image(0, 0, 'microfono').setScale(1.4).setDepth(6).setVisible(false);
+    this.waveMs = 0; this.shoutMs = 0; this.shoutIdx = 0;
     this.crutches = this.add.image(0, 0, 'stampelle').setScale(2).setDepth(4).setVisible(false);
     this.donkey = this.add.image(0, 0, 'asino').setScale(3).setDepth(6).setVisible(false);
     this.fanImg = this.add.image(0, 0, 'ventilatore').setScale(2).setDepth(7).setVisible(false);
@@ -87,6 +89,8 @@ export class Level extends Phaser.Scene {
     this.tickEffects(dt);
     this.updateShots(dt);
     this.updateFanFog(dt);
+    this.updateKaraoke(dt);
+    this.updateAuras();
 
     // Comparsa oggetti
     this.spawnMs -= dt;
@@ -160,6 +164,8 @@ export class Level extends Phaser.Scene {
 
     this.racket.setVisible(!!this.effects.padel);
     if (this.effects.padel) this.racket.setPosition(p.x + 20, p.y - 10).setAngle(Math.sin(this.elapsed / 80) * 25);
+    this.mic.setVisible(!!this.effects.karaoke);
+    if (this.effects.karaoke) this.mic.setPosition(p.x - 16, p.y - 6).setAngle(-20 + Math.sin(this.elapsed / 90) * 10);
 
     // Lampeggio quando colpito / invincibile
     if (this.hurtMs > 0) { this.hurtMs -= dt; p.setAlpha(Math.floor(this.hurtMs / 80) % 2 ? 0.3 : 1); }
@@ -170,7 +176,7 @@ export class Level extends Phaser.Scene {
   }
 
   tickEffects(dt) {
-    const labels = { riding: 'ASINO', wide: 'GAMBE LARGHE', speed: 'TURBO', double: 'x2', invincible: 'INVINCIBILE', padel: 'PADEL', stuck: 'SUL DIVANO', crutches: 'STAMPELLE', ski: 'SCI-BLASTER', fan: 'VENTILATORE', fog: 'NEBBIA' };
+    const labels = { riding: 'ASINO', wide: 'GAMBE LARGHE', speed: 'TURBO', double: 'x2', invincible: 'INVINCIBILE', padel: 'PADEL', karaoke: 'KARAOKE', stuck: 'SUL DIVANO', crutches: 'STAMPELLE', ski: 'SCI-BLASTER', fan: 'VENTILATORE', fog: 'NEBBIA' };
     const active = [];
     for (const k of Object.keys(this.effects)) {
       this.effects[k] -= dt;
@@ -198,6 +204,51 @@ export class Level extends Phaser.Scene {
     it.setVelocityY(fall * Phaser.Math.FloatBetween(0.9, 1.1));
     if (kind === 'pizza') it.body.setSize(12, 12).setOffset(1, 9); // la puzza non conta come ostacolo
     if (kind === 'asino') it.body.setSize(18, 10).setOffset(2, 4);
+    if (BOOSTERS[kind]?.aura) this.addAura(it, tex, BOOSTERS[kind].aura);
+  }
+
+  // Racchetta e microfono: alone colorato e oggetto che gira sull'asse verticale.
+  // L'oggetto "vero" (quello che si prende) resta invisibile; si vedono la copia che gira e l'alone.
+  addAura(it, tex, color) {
+    it.setVisible(false);
+    it.auraImg = this.add.image(it.x, it.y, 'aura').setTint(color).setDepth(1).setBlendMode(Phaser.BlendModes.ADD);
+    it.vis = this.add.image(it.x, it.y, tex).setScale(2).setDepth(2);
+    it.once('destroy', () => { it.auraImg.destroy(); it.vis.destroy(); });
+  }
+
+  updateAuras() {
+    for (const it of this.items.getChildren()) {
+      if (!it.vis) continue;
+      const c = Math.cos(this.elapsed / 220 + it.seed);
+      it.vis.setPosition(it.x, it.y).setScale(2 * Math.max(0.12, Math.abs(c)), 2).setFlipX(c < 0);
+      const pulse = Math.sin(this.elapsed / 180 + it.seed);
+      it.auraImg.setPosition(it.x, it.y).setScale(1.7 + pulse * 0.15).setAlpha(0.65 + pulse * 0.15);
+    }
+  }
+
+  // Karaoke: Aurelio canta, le onde d'urto rompono pizze, rocce, asini e inviti nel raggio vicino
+  updateKaraoke(dt) {
+    if (!this.effects.karaoke || this.frozen) return;
+    const p = this.player;
+    this.shoutMs -= dt;
+    if (this.shoutMs <= 0) {
+      this.shoutMs = KARAOKE.shoutEvery;
+      const line = KARAOKE.lines[this.shoutIdx++ % KARAOKE.lines.length];
+      this.floatText(p.x, p.y - 50, line, '#ff9ecb');
+      sfx.sing();
+    }
+    this.waveMs -= dt;
+    if (this.waveMs > 0) return;
+    this.waveMs = KARAOKE.waveEvery;
+    sfx.wave();
+    for (const [delay, col] of [[0, 0xff9ecb], [120, 0xffffff]]) {
+      const ring = this.add.circle(p.x, p.y - 4, 8).setStrokeStyle(2, col, 0.9).setDepth(6);
+      this.tweens.add({ targets: ring, scale: KARAOKE.radius / 8, alpha: 0, delay, duration: 380, onComplete: () => ring.destroy() });
+    }
+    for (const it of [...this.items.getChildren()]) {
+      if (!it.active || it.reflected || !(OBSTACLES[it.kind] || it.kind === 'invito')) continue;
+      if (Phaser.Math.Distance.Between(p.x, p.y, it.x, it.y) <= KARAOKE.radius) this.smash(it, 'CRASH!');
+    }
   }
 
   spawnFriend(fall) {
@@ -217,6 +268,7 @@ export class Level extends Phaser.Scene {
 
     if (OBSTACLES[k]) {
       if (this.effects.padel) { this.smash(it, 'SMASH!'); return; }
+      if (this.effects.karaoke) { this.smash(it, 'CRASH!'); return; }
       if (this.effects.invincible) { this.smash(it, 'OLE!'); return; }
       if (this.hurtMs > 0) return;
       if (OBSTACLES[k].donkey) { // l'asino non toglie vite: ti carica in groppa
@@ -242,7 +294,8 @@ export class Level extends Phaser.Scene {
     if (BOOSTERS[k]) {
       const b = BOOSTERS[k];
       this.effects[b.effect] = b.ms;
-      if (b.effect === 'padel' || b.effect === 'invincible') delete this.effects.stuck;
+      if (b.effect === 'padel' || b.effect === 'invincible' || b.effect === 'karaoke') delete this.effects.stuck;
+      if (b.effect === 'karaoke') { this.shoutMs = 0; this.waveMs = 0; }
       this.addBonus(15); sfx.boost();
       this.floatText(it.x, it.y, k === 'spritz' && this.camparino ? b.camparino : b.label, '#f4d03f');
       it.destroy();
@@ -264,7 +317,7 @@ export class Level extends Phaser.Scene {
         sfx.smash(); this.floatText(it.x, it.y, 'RISPEDITO!', '#f4d03f');
         return;
       }
-      if (this.effects.invincible) { this.smash(it, 'NO GRAZIE!'); return; }
+      if (this.effects.invincible || this.effects.karaoke) { this.smash(it, 'NO GRAZIE!'); return; }
       this.effects.stuck = 2000; sfx.hit();
       this.floatText(this.player.x, this.player.y - 40, pick(BOSS.hitLines), '#ff9ecb');
       it.destroy();

@@ -174,6 +174,22 @@ export const SPRITES = {
     "....GGGG....",
     "...GGGGGG..."
   ],
+  "microfono": [
+    "....xxxx....",
+    "...xQxQxx...",
+    "..xQxQxQxx..",
+    "..xxQxQxQx..",
+    "..xQxQxQxx..",
+    "...xxQxQx...",
+    "....xxxx....",
+    "....yyyy....",
+    ".....KK.....",
+    ".....KK.....",
+    ".....KK.....",
+    ".....KK.....",
+    "....KKKK....",
+    "....KKKK...."
+  ],
   "racchetta": [
     "...oooooo...",
     "..oyyyyyyo..",

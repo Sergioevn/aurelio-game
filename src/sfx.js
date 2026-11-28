@@ -37,5 +37,7 @@ export const sfx = {
   ring()   { this.tone([1320, 1100, 1320, 1100, 1320, 1100], 0.05, 'square', 0.04); },
   coin()   { this.tone([988, 1319, 1568], 0.05, 'square', 0.05); },
   splash() { this.tone([400, 300, 200, 140, 100], 0.05, 'sawtooth', 0.06); },
+  sing()   { this.tone([392, 523, 659, 784, 659, 784], 0.08, 'triangle', 0.08); },
+  wave()   { this.tone([140, 110], 0.05, 'sine', 0.05); },
   over()   { this.tone([392, 330, 262, 196], 0.18, 'triangle', 0.08); }
 };
